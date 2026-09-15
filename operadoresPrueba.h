@@ -12,6 +12,8 @@ typedef struct {
     DescriptorSegmento tablaSegmento[SEGMENTOS]; 
 } TipoMV;
 
+//Operaciones con 2 registros
+
 void MOV(TipoMV *MV);
 void ADD(TipoMV *MV);
 void SUB(TipoMV *MV);
@@ -29,6 +31,8 @@ void LDL(TipoMV *MV);
 void LDH(TipoMV *MV);
 void RND(TipoMV *MV);
 
+//Operaciones con 1 registros
+
 void SYS(TipoMV *MV);
 void JMP(TipoMV *MV);
 void JP(TipoMV *MV);
@@ -40,5 +44,7 @@ void JNP(TipoMV *MV);
 void JNN(TipoMV *MV);
 void JNZ(TipoMV *MV);
 void NOT(TipoMV *MV);
+
+//Operaciones sin registros
 
 void STOP(TipoMV *MV);

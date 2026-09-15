@@ -1,7 +1,8 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdint.h>
-#include "operadoresPrueba.h" 
+#include "operadoresPrueba.h"
+#include "mascaras.h"
 
 #define REGISTROS 32    
 #define MEMORIA 16384   
@@ -9,6 +10,9 @@
 
 // Índices de los registros clave
 #define IP 0
+#define OPC 1
+#define OP1 2
+#define OP2 3
 #define CS 26
 #define DS 27
 
@@ -40,9 +44,10 @@ Operacion instruccion[32] = {
 };
 
 
+
 // Verifica el identificador y la versión
 int verifica_cabecera(uint8_t cabecera[6]) { 
-    uint8_t comp[6] = {'V', 'M', 'X', '2', '6', 1};
+    uint8_t comp[6] = {'V', 'M', 'X', '2', '6', '1'}; 
     for (int i = 0; i < 6; i++) {
         if (cabecera[i] != comp[i]) return 0; // Falla si un byte no coincide
     }
@@ -76,8 +81,8 @@ void inicializacion(char nombre_arch[], TipoMV *MV) {
         // Configuramos la tabla de segmentos (sigue igual)
         MV->tablaSegmento[0].base = 0;
         MV->tablaSegmento[0].tamano = tam_codigo;
-        MV->tablaSegmento[1].base = tam_codigo;
-        MV->tablaSegmento[1].tamano = MEMORIA - tam_codigo;
+        MV->tablaSegmento[1].base = tam_codigo;                 // El inicio del seg datos == fin del seg codigo
+        MV->tablaSegmento[1].tamano = MEMORIA - tam_codigo; 
 
         // Entradas sin usar en -1 (0xFFFF)
         for(int i = 2; i < SEGMENTOS; i++) {
@@ -88,8 +93,8 @@ void inicializacion(char nombre_arch[], TipoMV *MV) {
         // Limpiamos e inicializamos los registros
         for(int i = 0; i < REGISTROS; i++)
              MV->registros[i] = 0;
-        MV->registros[CS] = 0 << 16; 
-        MV->registros[DS] = 1 << 16; 
+        MV->registros[CS] = 0 << 16;
+        MV->registros[DS] = 1 << 16;
         MV->registros[IP] = MV->registros[CS];
 
         // Guardamos las instrucciones en el code segment de la memoria
@@ -139,3 +144,24 @@ int main() {
 
 //Para usar un vector de operadores definimos el indicie como la pos que ocupan y adentro los nombres directamente.
 
+//Funcion para corroborar que el codigo de operacion sea valido
+int existeOperacion(uint8_t ope){
+    return (ope<0x1F);
+}
+
+
+void ejecucion(TipoMv *MV){
+    uint8_t operacion;
+    //No se si es la condicion del while y habria que cortar cuando encuentre un error 
+    while (MV -> registros[IP]!= 0xFFFFFFFF){ 
+        operacion = MV ->memoria[MV -> registros[IP]] & Masc_CodO; //Consigo el codigo de operacion
+        if (existeCodigo(Operacion)){
+            MV->registros[OPC] = operacion;
+            MV->registros[OP1] = (MV ->memoria[MV -> registros[IP]] & Masc_OP1) >> 4;
+            MV->registros[OP2] = (MV ->memoria[MV -> registros[IP]] & Masc_OP2) >> 6;
+        }   
+        else{
+            //Deberia tirar un excepcion de error por operacion invalida
+        } 
+    }
+}

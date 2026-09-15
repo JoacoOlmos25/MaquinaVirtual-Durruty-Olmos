@@ -150,26 +150,53 @@ int existeOperacion(uint8_t ope){
     return (ope<0x1F);
 }
 
+int32_t leer_operando(TipoMV *MV, uint8_t tipo) {
+    int32_t valor = 0;
+    
+    switch (tipo) {
+        case 0: // Ninguno (0 bytes)
+            break;
+        case 1: // Registro (1 byte)
+            // Lógica para leer 1 byte y sumar 1 al IP
+            break;
+        case 2: // Inmediato (2 bytes)
+            // Lógica para leer 2 bytes y sumar 2 al IP
+            break;
+        case 3: // Memoria (3 bytes)
+            // Lógica para leer 3 bytes y sumar 3 al IP
+            break;
+    }
+    
+    // Armamos el formato: Tipo en el byte alto, valor en los bajos
+    return (tipo << 24) | valor;
+}
 
-void ejecucion(TipoMV *MV){
-    uint8_t operacion;
-    int ip = 0;
-    //No se si es la condicion del while y habria que cortar cuando encuentre un error 
-    while (MV -> registros[IP]!= 0xFFFFFFFF){ 
-        operacion = MV ->memoria[MV -> registros[IP]] & Masc_CodO; //Consigo el codigo de operacion
-        if (existeCodigo(operacion)){
-            MV->registros[OPC] = operacion;
-            if (operacion >= 0x10){
-                MV->registros[OP1] = (MV ->memoria[MV -> registros[IP]] & Masc_OP1) >> 4;
-                MV->registros[OP2] = (MV ->memoria[MV -> registros[IP]] & Masc_OP2) >> 6;
-            }
-            else{
-                MV->registros[OP2] = ((*MV) -> memoria[(*MV)-> registros[IP]] & Masc_OP2) >> 6;
-            }
-            instruccion[operacion](&MV);
-        }   
-        else{
-            //Deberia tirar un excepcion de error por operacion invalida
-        } 
+
+void ejecucion(TipoMV *MV) {
+    // El ciclo corta si IP toma el valor -1 (0xFFFFFFFF) por un STOP o error
+    while (MV->registros[IP] != 0xFFFFFFFF) {
+        
+        // 1. Leemos el primer byte y extraemos máscaras
+        uint8_t primer_byte = MV->memoria[MV->registros[IP]];
+        uint8_t operacion = primer_byte & Masc_CodO;
+        uint8_t tipo_op1 = (primer_byte & Masc_OP1) >> 4;
+        uint8_t tipo_op2 = (primer_byte & Masc_OP2) >> 6;
+        //habria que validar que existe el codigo de operacion 
+        // Guardamos el código de operación como pide el apunte
+        MV->registros[OPC] = operacion; 
+        
+        // 2. Avanzamos el IP para dejar atrás este primer byte
+        MV->registros[IP]++;
+        
+        // 3. Delegamos el trabajo sucio al TDA / Función auxiliar
+        MV->registros[OP1] = leer_operando(MV, tipo_op1);
+        MV->registros[OP2] = leer_operando(MV, tipo_op2);
+        
+        // 4. Ejecutamos la instrucción matematicamente
+        if (instruccion[operacion] != NULL) {
+            instruccion[operacion](MV);
+        } else {
+            // Manejo de error: Instrucción Inválida
+        }
     }
 }

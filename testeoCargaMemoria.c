@@ -95,7 +95,7 @@ void inicializacion(char nombre_arch[], TipoMV *MV) {
              MV->registros[i] = 0;
         MV->registros[CS] = 0 << 16;
         MV->registros[DS] = 1 << 16;
-        MV->registros[IP] = MV->registros[CS];
+        MV->registros[0] = MV->registros[CS];
 
         // Guardamos las instrucciones en el code segment de la memoria
         int desp = 0;
@@ -145,20 +145,28 @@ int main() {
 //Para usar un vector de operadores definimos el indicie como la pos que ocupan y adentro los nombres directamente.
 
 //Funcion para corroborar que el codigo de operacion sea valido
+
 int existeOperacion(uint8_t ope){
     return (ope<0x1F);
 }
 
 
-void ejecucion(TipoMv *MV){
+void ejecucion(TipoMV *MV){
     uint8_t operacion;
+    int ip = 0;
     //No se si es la condicion del while y habria que cortar cuando encuentre un error 
     while (MV -> registros[IP]!= 0xFFFFFFFF){ 
         operacion = MV ->memoria[MV -> registros[IP]] & Masc_CodO; //Consigo el codigo de operacion
-        if (existeCodigo(Operacion)){
+        if (existeCodigo(operacion)){
             MV->registros[OPC] = operacion;
-            MV->registros[OP1] = (MV ->memoria[MV -> registros[IP]] & Masc_OP1) >> 4;
-            MV->registros[OP2] = (MV ->memoria[MV -> registros[IP]] & Masc_OP2) >> 6;
+            if (operacion >= 0x10){
+                MV->registros[OP1] = (MV ->memoria[MV -> registros[IP]] & Masc_OP1) >> 4;
+                MV->registros[OP2] = (MV ->memoria[MV -> registros[IP]] & Masc_OP2) >> 6;
+            }
+            else{
+                MV->registros[OP2] = ((*MV) -> memoria[(*MV)-> registros[IP]] & Masc_OP2) >> 6;
+            }
+            instruccion[operacion](&MV);
         }   
         else{
             //Deberia tirar un excepcion de error por operacion invalida

@@ -47,7 +47,7 @@ Operacion instruccion[32] = {
 
 // Verifica el identificador y la versión
 int verifica_cabecera(uint8_t cabecera[6]) { 
-    uint8_t comp[6] = {'V', 'M', 'X', '2', '6', '1'}; 
+    uint8_t comp[6] = {'V', 'M', 'X', '2', '6', 1}; 
     for (int i = 0; i < 6; i++) {
         if (cabecera[i] != comp[i]) return 0; // Falla si un byte no coincide
     }

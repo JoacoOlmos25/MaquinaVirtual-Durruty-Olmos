@@ -1,3 +1,5 @@
+#include operadores.h
+
 //Los 28 operaciones del ASSEMBLER
 // firmas de los operadores
 

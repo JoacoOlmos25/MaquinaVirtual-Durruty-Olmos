@@ -1,3 +1,7 @@
+#pragma once // es para que cuando compilemos no lea este archivo mas de una vez asi no tira error. 
+
+#include <stdint.h>
+
 #define REGISTROS 32    
 #define MEMORIA 16384   
 #define SEGMENTOS 8     
@@ -40,3 +44,4 @@ typedef struct {
     uint8_t memoria[MEMORIA];              
     DescriptorSegmento tablaSegmento[SEGMENTOS]; 
 } TipoMV;
+

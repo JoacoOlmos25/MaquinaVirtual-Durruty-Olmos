@@ -4,6 +4,7 @@
 #include "operadores.h"
 #include "mascaras.h"
 #include "MaquinaVirtual.h"
+#include "disassembler.h"
 
 // "Operacion" es un puntero a una función que recibe TipoMV*
 typedef void (*Operacion)(TipoMV *MV); 
@@ -14,8 +15,6 @@ Operacion instruccion[32] = {
     MOV, ADD, SUB, MUL, DIV, CMP, AND, OR,  // 0x10 a 0x17
     XOR, SWAP, SHL, SHR, SAR, LDL, LDH, RND // 0x18 a 0x1F
 };
-
-
 
 // Verifica el identificador y la versión
 int verifica_cabecera(uint8_t cabecera[6]) { 
@@ -29,7 +28,7 @@ int verifica_cabecera(uint8_t cabecera[6]) {
 
 // Inicializa la MV y carga el programa en memoria
 
-void inicializacion(char nombre_arch[], TipoMV *MV) {
+void inicializacion(char nombre_arch[], TipoMV *MV,uint16_t *tam_codigo) {
     FILE *arch = fopen(nombre_arch, "rb");
     if (arch == NULL) {
         printf("Error al abrir el archivo .vmx\n");
@@ -49,13 +48,13 @@ void inicializacion(char nombre_arch[], TipoMV *MV) {
 
         // Unimos los bytes en el orden correcto (Big-Endian)
         // Movemos el byte 0 hacia la izquierda y le sumamos el byte 1
-        uint16_t tam_codigo = (buffer_tam[0] << 8) | buffer_tam[1];
+        *tam_codigo = (buffer_tam[0] << 8) | buffer_tam[1];
 
         // Configuramos la tabla de segmentos (sigue igual)
         MV->tablaSegmento[0].base = 0;
-        MV->tablaSegmento[0].tamano = tam_codigo;
-        MV->tablaSegmento[1].base = tam_codigo;                 // El inicio del seg datos == fin del seg codigo
-        MV->tablaSegmento[1].tamano = MEMORIA - tam_codigo; 
+        MV->tablaSegmento[0].tamano = *tam_codigo;
+        MV->tablaSegmento[1].base = *tam_codigo;                 // El inicio del seg datos == fin del seg codigo
+        MV->tablaSegmento[1].tamano = MEMORIA - *tam_codigo; 
 
         // Entradas sin usar en -1 (0xFFFF)
         for(int i = 2; i < SEGMENTOS; i++) {
@@ -82,7 +81,7 @@ void inicializacion(char nombre_arch[], TipoMV *MV) {
         printf("\n--- Volcado de Memoria (Codigo Cargado) ---\n");
         
         // Iteramos exclusivamente sobre el tamaño del código que nos dijo la cabecera
-        for (int i = 0; i < tam_codigo; i++) {
+        for (int i = 0; i < *tam_codigo; i++) {
             // Imprimimos cada byte en formato hexadecimal estandarizado (%02X)
             printf("%02X ", MV->memoria[MV->registros[CS] + i]);
             
@@ -99,25 +98,13 @@ void inicializacion(char nombre_arch[], TipoMV *MV) {
 
 int main() {
     TipoMV MV;
+    uint16_t tam_codigo;
     // Llamamos a la función pasando el archivo binario generado
-    inicializacion("prueba.vmx", &MV);
+    inicializacion("prueba.vmx", &MV,&tam_codigo);
+    generar_disassembler(&MV,tam_codigo);
     
     return 0;
 }
-
-// El Ciclo de EjecuciónSegún el documento de la cátedra, la ejecución es un proceso que se repite y consiste en los siguientes pasos: 
-//  Leer la instrucción a la que apunta actualmente el registro IP.  
-//  Almacenar el código de operación de esa instrucción en el registro OPC.
-//  Guardar en los registros OP1 y OP2 la información de los operandos A y B.
-//  Avanzar el registro IP hacia la próxima instrucción (sumando la cantidad de bytes que ocupó la actual).  
-//  Realizar la operación correspondiente (sumar, mover, comparar, etc.).
-//  El documento también aclara que este ciclo se debe repetir hasta que el registro IP apunte fuera del segmento de código, o hasta que se ejecute una instrucción STOP, la cual le asigna un -1 (o 0xFFFFFFFF) al IP para forzar la detención
-
-// Para decodificar los byte hay que usar las mascaras  OPC con 0x1F ; OP1 con 0x30 OP2 con 0x60;
-
-//Para usar un vector de operadores definimos el indicie como la pos que ocupan y adentro los nombres directamente.
-
-//Funcion para corroborar que el codigo de operacion sea valido
 
 int existeOperacion(uint8_t ope){
     return (ope<0x1F) && !(ope >= 0x0B && ope <= 0x0E ) ; //agregue que si el cod de operaicon cae en uno de los null devuelva 0 tambien
@@ -138,14 +125,14 @@ int32_t leer_operando(TipoMV *MV, uint8_t tipo) {
             MV->registros[IP] += 1;
             break;
             
-        case 2: // Inmediato (2 bytes)
+        case 2:{ // Inmediato (2 bytes)
             // Leemos 2 bytes y los guardamos en una variable de 16 bits con signo (int16_t)
             // Esto es vital para que C maneje automáticamente los números negativos (extensión de signo)
             int16_t inmediato = (MV->memoria[ip_actual] << 8) | MV->memoria[ip_actual + 1];
             valor = inmediato; 
             MV->registros[IP] += 2;
             break;
-            
+            }   
         case 3: // Memoria (3 bytes)
             // Según el documento, se compone de 16 bits de desplazamiento y 5 bits de registro.
             // Unimos los 3 bytes desplazándolos a sus posiciones relativas para armar un bloque de 24 bits
@@ -189,7 +176,7 @@ void ejecucion(TipoMV *MV) {
             if (instruccion[operacion] != NULL) {
                 instruccion[operacion](MV);
             } else {
-                // Manejo de error: Instrucción Inválida
+                // Manejo de error: Instrucción Inválid
             }
         }
     }

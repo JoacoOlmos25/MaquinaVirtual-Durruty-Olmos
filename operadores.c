@@ -48,59 +48,88 @@ void MOV(TipoMV *MV){
 
 }
 
-void ADD(){
+void ADD(TipoMV *MV){
 
 }
 
-void SUB(){
+void SUB(TipoMV *MV){
 
 }
 
-void MUL(){
+void MUL(TipoMV *MV){
     
 }
 
-void DIV(){
+void DIV(TipoMV *MV){
 
 }
 
-void CMP(){
+void CMP(TipoMV *MV){
 
 }
 
-void AND(){
+void AND(TipoMV *MV){
 
 }
 
-void OR(){
+void OR(TipoMV *MV){
 
 }
 
-void SWAP(){
+void XOR(TipoMV *MV){
 
 }
 
-void SHL(){
+void SWAP(TipoMV *MV){
 
 }
 
-void SHR(){
+void SHL(TipoMV *MV){
 
 }
 
-void SAR(){
+void SHR(TipoMV *MV){
 
 }
 
-void LDL(){
+void SAR(TipoMV *MV){
 
 }
 
-void LDH(){
+void LDL(TipoMV *MV){
 
 }
 
-void RND(){
+void LDH(TipoMV *MV){
 
 }
+
+void RND(TipoMV *MV){
+
+}
+
+void SYS(TipoMV *MV){}
+
+void JMP(TipoMV *MV){}
+
+void JP(TipoMV *MV){}
+
+void JN(TipoMV *MV){}
+
+void JZ(TipoMV *MV){}
+
+void JC(TipoMV *MV){}
+
+void JV(TipoMV *MV){}
+
+void JNP(TipoMV *MV){}
+
+void JNN(TipoMV *MV){}
+
+void JNZ(TipoMV *MV){}
+
+void NOT(TipoMV *MV){}
+
+
+void STOP(TipoMV *MV){}
 

@@ -1,9 +1,13 @@
-#include operadores.h
+#include "operadores.h"
+#include "MaquinaVirtual.h"
+#include <stdint.h>
+#include <stdio.h>
+#include <stdlib.h>
 
 //Los 28 operaciones del ASSEMBLER
 // firmas de los operadores
 
-void MOV(){
+void MOV(TipoMV *MV){
 
     // 1. EXTRAER TIPO Y VALOR DEL OPERANDO 2 (ORIGEN)
     // Desplazamos 24 bits a la derecha para que quede solo el byte superior (el tipo)

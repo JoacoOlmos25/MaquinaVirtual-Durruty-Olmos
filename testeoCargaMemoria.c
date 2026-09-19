@@ -1,37 +1,9 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdint.h>
-#include "operadoresPrueba.h"
+#include "operadores.h"
 #include "mascaras.h"
-
-#define REGISTROS 32    
-#define MEMORIA 16384   
-#define SEGMENTOS 8     
-
-// Índices de los registros clave
-#define IP 0
-#define OPC 1
-#define OP1 2
-#define OP2 3
-#define CS 26
-#define DS 27
-
-
-// La tabla de descriptores de segmentos
-typedef struct {
-    uint16_t base; //este tipo de dato viene en stdint.h basicamente nos aseguramos que sean de los bits necesarios
-    uint16_t tamano; 
-} DescriptorSegmento;
-
-
-// Estructura principal de la Máquina Virtual
-typedef struct {
-    int32_t registros[REGISTROS];          
-    uint8_t memoria[MEMORIA];              
-    DescriptorSegmento tablaSegmento[SEGMENTOS]; 
-} TipoMV;
-
-
+#include "MaquinaVirtual.h"
 
 // "Operacion" es un puntero a una función que recibe TipoMV*
 typedef void (*Operacion)(TipoMV *MV); 
@@ -56,6 +28,7 @@ int verifica_cabecera(uint8_t cabecera[6]) {
 
 
 // Inicializa la MV y carga el programa en memoria
+
 void inicializacion(char nombre_arch[], TipoMV *MV) {
     FILE *arch = fopen(nombre_arch, "rb");
     if (arch == NULL) {
@@ -147,30 +120,46 @@ int main() {
 //Funcion para corroborar que el codigo de operacion sea valido
 
 int existeOperacion(uint8_t ope){
-    return (ope<0x1F);
+    return (ope<0x1F) && !(ope >= 0x0B && ope <= 0x0E ) ; //agregue que si el cod de operaicon cae en uno de los null devuelva 0 tambien
 }
 
 int32_t leer_operando(TipoMV *MV, uint8_t tipo) {
     int32_t valor = 0;
+    // Guardamos la posición actual del IP para leer la memoria
+    int ip_actual = MV->registros[IP]; 
     
-    switch (tipo) {
+    switch (tipo) {//avanza el IP dependiendo el tamano del operando
         case 0: // Ninguno (0 bytes)
+            // No hacemos nada, valor queda en 0 y el IP no avanza
             break;
+            
         case 1: // Registro (1 byte)
-            // Lógica para leer 1 byte y sumar 1 al IP
+            valor = MV->memoria[ip_actual];
+            MV->registros[IP] += 1;
             break;
+            
         case 2: // Inmediato (2 bytes)
-            // Lógica para leer 2 bytes y sumar 2 al IP
+            // Leemos 2 bytes y los guardamos en una variable de 16 bits con signo (int16_t)
+            // Esto es vital para que C maneje automáticamente los números negativos (extensión de signo)
+            int16_t inmediato = (MV->memoria[ip_actual] << 8) | MV->memoria[ip_actual + 1];
+            valor = inmediato; 
+            MV->registros[IP] += 2;
             break;
+            
         case 3: // Memoria (3 bytes)
-            // Lógica para leer 3 bytes y sumar 3 al IP
+            // Según el documento, se compone de 16 bits de desplazamiento y 5 bits de registro.
+            // Unimos los 3 bytes desplazándolos a sus posiciones relativas para armar un bloque de 24 bits
+            valor = (MV->memoria[ip_actual] << 16) | 
+                    (MV->memoria[ip_actual + 1] << 8) | 
+                    MV->memoria[ip_actual + 2];
+            MV->registros[IP] += 3;
             break;
     }
     
-    // Armamos el formato: Tipo en el byte alto, valor en los bajos
-    return (tipo << 24) | valor;
+    // Armamos el formato exigido: tipo en el byte más significativo, valor en los 3 menos significativos
+    // La máscara 0x00FFFFFF limpia cualquier basura o extensión de signo que haya quedado en el byte alto
+    return (tipo << 24) | (valor & 0x00FFFFFF); //devuelvo el operando codificado en 32 bits / 4 bytes para almacenarlo en el vec de registros
 }
-
 
 void ejecucion(TipoMV *MV) {
     // El ciclo corta si IP toma el valor -1 (0xFFFFFFFF) por un STOP o error
@@ -182,21 +171,26 @@ void ejecucion(TipoMV *MV) {
         uint8_t tipo_op1 = (primer_byte & Masc_OP1) >> 4;
         uint8_t tipo_op2 = (primer_byte & Masc_OP2) >> 6;
         //habria que validar que existe el codigo de operacion 
-        // Guardamos el código de operación como pide el apunte
-        MV->registros[OPC] = operacion; 
         
-        // 2. Avanzamos el IP para dejar atrás este primer byte
-        MV->registros[IP]++;
-        
-        // 3. Delegamos el trabajo sucio al TDA / Función auxiliar
-        MV->registros[OP1] = leer_operando(MV, tipo_op1);
-        MV->registros[OP2] = leer_operando(MV, tipo_op2);
-        
-        // 4. Ejecutamos la instrucción matematicamente
-        if (instruccion[operacion] != NULL) {
-            instruccion[operacion](MV);
-        } else {
-            // Manejo de error: Instrucción Inválida
+        if (existeOperacion(operacion)){ // agregue validacion de codigo;
+
+            // Guardamos el código de operación como pide el apunte
+            MV->registros[OPC] = operacion; 
+            
+            // 2. Avanzamos el IP para dejar atrás este primer byte
+            MV->registros[IP]++;
+            
+            // 3. Delegamos el trabajo sucio al TDA / Función auxiliar
+            MV->registros[OP1] = leer_operando(MV, tipo_op1);
+            MV->registros[OP2] = leer_operando(MV, tipo_op2);
+            
+
+            // 4. Ejecutamos la instrucción matematicamente
+            if (instruccion[operacion] != NULL) {
+                instruccion[operacion](MV);
+            } else {
+                // Manejo de error: Instrucción Inválida
+            }
         }
     }
 }

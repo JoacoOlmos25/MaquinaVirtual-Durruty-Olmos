@@ -1,16 +1,5 @@
-#include "main.c"
-
-typedef struct {
-    uint16_t base; //este tipo de dato viene en stdint.h basicamente nos aseguramos que sean de los bits necesarios
-    uint16_t tamano; 
-} DescriptorSegmento;
-
-// Estructura principal de la Máquina Virtual
-typedef struct {
-    int32_t registros[REGISTROS];          
-    uint8_t memoria[MEMORIA];              
-    DescriptorSegmento tablaSegmento[SEGMENTOS]; 
-} TipoMV;
+#include "MaquinaVirtual.h"
+#include <stdint.h>
 
 //Operaciones con 2 registros
 

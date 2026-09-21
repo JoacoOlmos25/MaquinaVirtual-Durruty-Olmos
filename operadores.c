@@ -3,9 +3,17 @@
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include "mascaras.h"
 
 //Los 28 operaciones del ASSEMBLER
 // firmas de los operadores
+
+//Operaciones de memoria
+
+void lecturaDeMemoria(TipoMV *MV, int OP){
+    
+}
+
 
 void MOV(TipoMV *MV){
 
@@ -14,25 +22,27 @@ void MOV(TipoMV *MV){
     uint8_t tipo_op2 = MV->registros[OP2] >> 24;
     
     // Usamos una máscara AND para quedarnos solo con los 3 bytes inferiores (el valor)
-    int32_t val_op2 = MV->registros[OP2] & 0x00FFFFFF;
+    int32_t val_op2 = MV->registros[OP2] & Masc_Byte_Mas_Sig;
 
     int32_t dato_a_mover = 0;
 
     // Evaluamos de dónde sacar el dato original
     if (tipo_op2 == 1) { // Es un registro
-        // ¡LA MAGIA OCURRE AQUÍ! Si val_op2 es 10, lee MV->registros[10] (EAX)
+        //Si val_op2 es 10, lee MV->registros[10] (EAX)
         dato_a_mover = MV->registros[val_op2]; 
     } 
     else if (tipo_op2 == 2) { // Es un inmediato
         // El dato es directamente el valor que extrajimos
         dato_a_mover = val_op2;
     }
-    // (Faltaría la lógica si tipo_op2 == 3, que es memoria)
+    else {
+        //Tipo de dato de memoria
+    }
 
 
     // 2. EXTRAER TIPO Y VALOR DEL OPERANDO 1 (DESTINO)
     uint8_t tipo_op1 = MV->registros[OP1] >> 24;
-    int32_t val_op1 = MV->registros[OP1] & 0x00FFFFFF;
+    int32_t val_op1 = MV->registros[OP1] & Masc_Byte_Mas_Sig;
 
     // Evaluamos dónde guardar el dato
     if (tipo_op1 == 1) { // Es un registro

@@ -4,16 +4,10 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include "mascaras.h"
+#include "OperacionesMem"
 
 //Los 28 operaciones del ASSEMBLER
 // firmas de los operadores
-
-//Operaciones de memoria
-
-void lecturaDeMemoria(TipoMV *MV, int OP){
-    
-}
-
 
 void MOV(TipoMV *MV){
 

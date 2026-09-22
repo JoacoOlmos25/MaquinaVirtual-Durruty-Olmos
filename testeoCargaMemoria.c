@@ -148,7 +148,7 @@ void leer_operando(TipoMV *MV, uint8_t tipo, int *posmem, int OP) {
 }
 
 void ejecucion(TipoMV *MV) {
-    int posmem=MV->registros[CD];
+    int posmem=MV->registros[CS];
     MV->registros[IP] = MV->memoria[posmem];
     posmem++;
 

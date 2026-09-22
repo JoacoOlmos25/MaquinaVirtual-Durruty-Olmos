@@ -110,10 +110,8 @@ int existeOperacion(uint8_t ope){
     return (ope<0x1F) && !(ope >= 0x0B && ope <= 0x0E ) ; //agregue que si el cod de operaicon cae en uno de los null devuelva 0 tambien
 }
 
-int32_t leer_operando(TipoMV *MV, uint8_t tipo) {
-    int32_t valor = 0;
-    // Guardamos la posición actual del IP para leer la memoria
-    int ip_actual = MV->registros[IP]; 
+void leer_operando(TipoMV *MV, uint8_t tipo, int *posmem, int OP) {
+    int32_t valor = 0; 
     
     switch (tipo) {//avanza el IP dependiendo el tamano del operando
         case 0: // Ninguno (0 bytes)
@@ -121,56 +119,61 @@ int32_t leer_operando(TipoMV *MV, uint8_t tipo) {
             break;
             
         case 1: // Registro (1 byte)
-            valor = MV->memoria[ip_actual];
-            MV->registros[IP] += 1;
+            valor = MV->memoria[*posmem];
+            (*posmem) += 1;
             break;
             
         case 2:{ // Inmediato (2 bytes)
             // Leemos 2 bytes y los guardamos en una variable de 16 bits con signo (int16_t)
             // Esto es vital para que C maneje automáticamente los números negativos (extensión de signo)
-            int16_t inmediato = (MV->memoria[ip_actual] << 8) | MV->memoria[ip_actual + 1];
+            int16_t inmediato = (MV->memoria[*posmem] << 8) | MV->memoria[*posmem + 1];
             valor = inmediato; 
-            MV->registros[IP] += 2;
+            (*posmem) += 2;
             break;
             }   
         case 3: // Memoria (3 bytes)
             // Según el documento, se compone de 16 bits de desplazamiento y 5 bits de registro.
             // Unimos los 3 bytes desplazándolos a sus posiciones relativas para armar un bloque de 24 bits
-            valor = (MV->memoria[ip_actual] << 16) | 
-                    (MV->memoria[ip_actual + 1] << 8) | 
-                    MV->memoria[ip_actual + 2];
-            MV->registros[IP] += 3;
+            valor = (MV->memoria[*posmem] << 16) | 
+                    (MV->memoria[*posmem + 1] << 8) | 
+                    MV->memoria[*posmem + 2];
+            (*posmem) += 3;
             break;
     }
     
+    MV->registros[OP]= (tipo << 24) | (valor & 0x00FFFFFF);
     // Armamos el formato exigido: tipo en el byte más significativo, valor en los 3 menos significativos
     // La máscara 0x00FFFFFF limpia cualquier basura o extensión de signo que haya quedado en el byte alto
-    return (tipo << 24) | (valor & 0x00FFFFFF); //devuelvo el operando codificado en 32 bits / 4 bytes para almacenarlo en el vec de registros
+    //devuelvo el operando codificado en 32 bits guardado en el registro correspondiente
 }
 
 void ejecucion(TipoMV *MV) {
+    int posmem=MV->registros[CS];
+    MV->registros[IP] = MV->memoria[posmem];
+    posmem++;
+
     // El ciclo corta si IP toma el valor -1 (0xFFFFFFFF) por un STOP o error
     while (MV->registros[IP] != 0xFFFFFFFF) {
         
-        // 1. Leemos el primer byte y extraemos máscaras
-        uint8_t primer_byte = MV->memoria[MV->registros[IP]];
-        uint8_t operacion = primer_byte & Masc_CodO;
-        uint8_t tipo_op1 = (primer_byte & Masc_OP1) >> 4;
-        uint8_t tipo_op2 = (primer_byte & Masc_OP2) >> 6;
-        //habria que validar que existe el codigo de operacion 
-        
+        // Leemos el primer byte y extraemos máscaras
+        //uint8_t primer_byte = MV->memoria[MV->registros[IP]];
+        uint8_t operacion = MV->registros[IP] & Masc_CodO;
+        uint8_t tipo_op1 = (MV->registros[IP] & Masc_OP1) >> 4;
+        uint8_t tipo_op2 = (MV->registros[IP] & Masc_OP2) >> 6; 
+        //modifique primer_byte por MV->registros[IP]
+
         if (existeOperacion(operacion)){ // agregue validacion de codigo;
 
-            // Guardamos el código de operación como pide el apunte
-            MV->registros[OPC] = operacion; 
+            //1. Guardamos el código de operación como pide el apunte
+            MV->registros[OPC] = operacion;
+
+            //2. utilizamos funcion aux para cargar los operandos
+            leer_operando(MV, tipo_op1, &posmem, OP1);
+            leer_operando(MV, tipo_op2, &posmem, OP2);
             
-            // 2. Avanzamos el IP para dejar atrás este primer byte
-            MV->registros[IP]++;
-            
-            // 3. Delegamos el trabajo sucio al TDA / Función auxiliar
-            MV->registros[OP1] = leer_operando(MV, tipo_op1);
-            MV->registros[OP2] = leer_operando(MV, tipo_op2);
-            
+            //3. Hago que el registro IP apunte a la siguiente instruccion
+            MV->registros[IP] = MV->memoria[posmem];
+            posmem++;
 
             // 4. Ejecutamos la instrucción matematicamente
             if (instruccion[operacion] != NULL) {

@@ -4,3 +4,4 @@
 #define Masc_Byte_Mas_Sig 0x0FFF  // 0000 1111 1111 1111
 #define Masc_2_Byte_Mas_Sig 0xFF00 // 1111 1111 0000 0000
 #define Masc_Compl 0xFFFF // 1111 1111 1111 1111
+#define Masc_Byte_Menos_Sig 0x00FF

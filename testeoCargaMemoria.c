@@ -141,7 +141,7 @@ void leer_operando(TipoMV *MV, uint8_t tipo, int *posmem, int OP) {
             break;
     }
     
-    MV->registros[OP]= (tipo << 24) | (valor & 0x00FFFFFF);
+    MV->registros[OP]= (tipo << 24) | (valor & 0x00FFFFFF); //0000 0001(tipo) 0000 0000 0000 0000 0000 0000(valor)
     // Armamos el formato exigido: tipo en el byte más significativo, valor en los 3 menos significativos
     // La máscara 0x00FFFFFF limpia cualquier basura o extensión de signo que haya quedado en el byte alto
     //devuelvo el operando codificado en 32 bits guardado en el registro correspondiente

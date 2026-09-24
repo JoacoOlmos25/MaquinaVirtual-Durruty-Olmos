@@ -9,6 +9,25 @@
 //Los 28 operaciones del ASSEMBLER
 // firmas de los operadores
 
+uint32_t obtenerDato(TipoMV *MV, int OP){
+    uint32_t dato;
+    uint8_t tipo;
+    tipo = MV->registros[OP] >> 24; 
+    dato = MV->registros[OP] && Masc_Byte_Mas_Sig;//seteo el valor en 24 bits
+    if (tipo == 1){ //registro
+        dato = MV->registros[dato];
+    }else
+        if (tipo == 2) {//inmediato
+            if ((dato >> 15) == 1 ){//negativo
+                dato = 0xFFFFF0000 | dato;
+            }
+        }else{
+            TraigoDeMemoria(MV,OP);
+            dato = MV->registros[MBR];    
+        }
+    return dato;
+}
+
 void actualizaCC(TipoMV *MV, int64_t res_con_signo, uint64_t res_sin_signo) {
     // Limpiamos solo los 4 bits más altos (NZCV), preservando los 28 bits reservados
     MV->registros[CC] &= 0x0FFFFFFF;
@@ -37,7 +56,7 @@ void actualizaCC(TipoMV *MV, int64_t res_con_signo, uint64_t res_sin_signo) {
     }
 }
 
-void guardarDato(TipoMV *MV, uint8_t tipo_destino, int32_t val_destino, int32_t dato) {
+void guardarDato(TipoMV *MV, uint8_t tipo_destino, int32_t val_destino, int32_t dato) { //hay que actualizarlo con respecto al archivo OperacionesMem.c
     if (tipo_destino == 1) { 
         // Es un Registro (1 byte)
         // val_destino contiene directamente el índice del registro (ej. 10 para EAX)
@@ -71,9 +90,6 @@ void guardarDato(TipoMV *MV, uint8_t tipo_destino, int32_t val_destino, int32_t 
         MV->memoria[dir_fisica + 3] = dato & 0xFF;
     }
 }
-
-
-
 
 
 void MOV(TipoMV *MV){
@@ -120,17 +136,12 @@ void MOV(TipoMV *MV){
 }
 
 void ADD(TipoMV *MV) {
-    // 1. Extraemos los paquetes completos de los registros OP1 y OP2
-    int32_t paquete_op1 = MV->registros[OP1];
-    int32_t paquete_op2 = MV->registros[OP2];
-
     // 2. Extraemos exclusivamente el tipo del destino (Operando 1) para poder guardar después
     // Desplazamos 24 bits lógicos hacia la derecha para aislar el byte más significativo
-    uint8_t tipo_destino = (uint32_t)paquete_op1 >> 24;
-
+    uint8_t tipo_destino = MV->registros[OP1] >> 24;
     // 3. Obtenemos los valores matemáticos reales usando la función traductora
-    int32_t val_destino = obtenerDato(MV, paquete_op1);
-    int32_t val_origen = obtenerDato(MV, paquete_op2);
+    int32_t val_destino = obtenerDato(MV, OP1);
+    int32_t val_origen = obtenerDato(MV, OP2);//falta funcion obtener dato;
 
     // 4. Calculamos los resultados en 64 bits para evaluar desbordes
     // Resultado con signo tradicional
@@ -141,7 +152,7 @@ void ADD(TipoMV *MV) {
 
     // 5. Guardamos el resultado de 32 bits en el destino (memoria o registro)
     // Extraemos la ubicación (los 3 bytes bajos) limpiando el tipo
-    int32_t ubicacion_destino = paquete_op1 & 0x00FFFFFF; 
+    int32_t ubicacion_destino = MV->registros[OP1] & 0x00FFFFFF; 
     guardarDato(MV, tipo_destino, ubicacion_destino, (int32_t)res_con_signo);
 
     // 6. Actualizamos las banderas N, Z, C, y V

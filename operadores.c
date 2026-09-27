@@ -4,7 +4,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include "mascaras.h"
-#include "OperacionesMem.c"
+#include "OperacionesMem.h"
 
 //Los 28 operaciones del ASSEMBLER
 // firmas de los operadores
@@ -29,29 +29,20 @@ uint32_t obtenerDato(TipoMV *MV, int OP){
 }
 
 void actualizaCC(TipoMV *MV, int64_t res_con_signo, uint64_t res_sin_signo) {
-    // Limpiamos solo los 4 bits más altos (NZCV), preservando los 28 bits reservados
     MV->registros[CC] &= 0x0FFFFFFF;
-
-    // Recortamos el resultado a 32 bits reales para evaluar Signo y Cero
     int32_t res32 = (int32_t)res_con_signo;
 
-    // Bit N (Signo): se activa cuando el resultado es negativo
+    // La 'U' (Unsigned) evita el comportamiento indefinido al tocar el bit 31
     if (res32 < 0) {
-        MV->registros[CC] |= (1 << 31);
+        MV->registros[CC] |= (1U << 31);
     }
-
-    // Bit Z (Cero): se activa cuando el resultado es cero
     if (res32 == 0) {
         MV->registros[CC] |= (1 << 30);
     }
-
-    // Bit C (Acarreo): se activa cuando el resultado excede los 32 bits disponibles
     if (res_sin_signo > 0xFFFFFFFF) {
         MV->registros[CC] |= (1 << 29);
     }
-
-    // Bit V (Desbordamiento): se activa cuando el resultado es erróneo por overflow con signo
-    if (res_con_signo > 2147483647LL || res_con_signo < -2147483648LL) { //LL le decis a C que tome al numero como un long int (de 64bits)
+    if (res_con_signo > 2147483647LL || res_con_signo < -2147483648LL) { 
         MV->registros[CC] |= (1 << 28);
     }
 }
@@ -69,7 +60,7 @@ void guardarDato(TipoMV *MV,int OP ,int32_t dato){
     else if (tipo == 3) { 
         MV->registros[MBR] = dato;
         lecturaDeMemoria(MV, OP);
-        CargaAMemoria(MV);
+        CargaAMemoria(MV,OP);
     }
 }
 
@@ -198,14 +189,16 @@ void SWAP(TipoMV *MV){
 }
 
 void SHL(TipoMV *MV){
-    int32_t val_destino = obtenerDato(MV, OP1);
+    // Casteamos a uint32_t para que C desplace los bits sin importar el signo
+    uint32_t val_destino = (uint32_t)obtenerDato(MV, OP1);
     int32_t val_origen = obtenerDato(MV, OP2);
 
-    int64_t res_con_signo = (int64_t)val_destino << val_origen;
-    uint64_t res_sin_signo = ((uint64_t)val_destino & 0xFFFFFFFF) << val_origen;
+    // El desplazamiento en 64 bits sin signo preserva el acarreo de forma segura
+    uint64_t res_64 = (uint64_t)val_destino << val_origen;
+    int32_t res_32 = (int32_t)(res_64 & 0xFFFFFFFF);
 
-    guardarDato(MV, OP1, (int32_t)res_con_signo);
-    actualizaCC(MV, res_con_signo, res_sin_signo);
+    guardarDato(MV, OP1, res_32);
+    actualizaCC(MV, (int64_t)res_32, res_64);
 }
 
 void SHR(TipoMV *MV){
@@ -294,17 +287,16 @@ void imprimir_segun_formato(uint32_t dato, uint32_t formato, uint16_t tamano) {
 }
 
 void sys_write(TipoMV *MV, uint16_t cantidad, uint16_t tamano, uint32_t dir_fisica, uint32_t formato) {
-    for (int i = 0; i < cantidad; i++) {
-        // Imprimimos el prompt de la direccion fisica del dato
+   for (int i = 0; i < cantidad; i++) {
         printf("[%04X]: ", dir_fisica);
-        // Extraer de memoria ensamblando los bytes según el tamaño
+        
+        // Extracción Big Endian estándar
         uint32_t dato = 0;
         for (int b = 0; b < tamano; b++) {
             dato = (dato << 8) | MV->memoria[dir_fisica + b]; 
         }
         imprimir_segun_formato(dato, formato, tamano);
         
-        // Avanzamos a la siguiente celda dependiendo del tamaño del valor
         dir_fisica += tamano; 
     }
 }
@@ -315,41 +307,23 @@ void sys_read(TipoMV *MV, uint16_t cantidad, uint16_t tamano, uint32_t dir_fisic
 
         uint32_t dato_ingresado = 0;
         
-        if (formato & 0x01) { 
-            // Decimal
-            scanf("%d", &dato_ingresado);
-        } 
+        if (formato & 0x01) scanf("%d", &dato_ingresado);
         else if (formato & 0x02) { 
-            // Carácter ASCII
             char c;
             scanf(" %c", &c);
             dato_ingresado = c;
         } 
-        else if (formato & 0x04) { 
-            // Octal
-            scanf("%o", &dato_ingresado);
-        } 
-        else if (formato & 0x08) { 
-            // Hexadecimal[cite: 7]
-            scanf("%x", &dato_ingresado);
-        } 
+        else if (formato & 0x04) scanf("%o", &dato_ingresado);
+        else if (formato & 0x08) scanf("%x", &dato_ingresado);
         else if (formato & 0x10) { 
-            // Binario
-            // Como scanf no soporta formato binario nativamente en C estándar, 
-            // capturamos el string y usamos strtol para la conversión a numero binario.
             char strbinario[33];
             scanf("%32s", strbinario);
-            
             char *ptr = strbinario;
-            // Si el usuario incluye el prefijo '0b' o '0B', lo ignoramos adelantando el puntero
-            if (strbinario[0] == '0' && (strbinario[1] == 'b' || strbinario[1] == 'B')) {
-                ptr += 2; 
-            }
-            // strtol convierte la cadena en base 2 a un número entero
+            if (strbinario[0] == '0' && (strbinario[1] == 'b' || strbinario[1] == 'B')) ptr += 2; 
             dato_ingresado = (uint32_t)strtol(ptr, NULL, 2);
         }
 
-
+        // Inyección Big Endian estándar (desde el byte más significativo)
         for (int b = tamano - 1; b >= 0; b--) {
             MV->memoria[dir_fisica + b] = dato_ingresado & 0xFF;
             dato_ingresado >>= 8;
@@ -360,24 +334,20 @@ void sys_read(TipoMV *MV, uint16_t cantidad, uint16_t tamano, uint32_t dir_fisic
 }
 //##############################################################################
 void SYS(TipoMV *MV){
-    // Averiguamos si es READ (1) o WRITE (2)[cite: 7]
     int32_t tipo_llamada = obtenerDato(MV, OP1);
 
-    // ECX indica la cantidad en los 2 bytes bajos y el tamaño en los 2 bytes altos
+    // ECX indica la cantidad en los 2 bytes bajos y el tamaño en los 2 bytes altos[cite: 26]
     uint16_t cantidad = MV->registros[ECX] & 0xFFFF;
     uint16_t tamano = (MV->registros[ECX] >> 16) & 0xFFFF;
 
-    // EDX apunta a la memoria inicial[cite: 7]
-
-    int16_t offset = MV->registros[EDX] & 0xFFFF;
-    uint8_t reg_base = (MV->registros[EDX] >> 16) & 0x1F;
-    uint16_t dir_fisica = DirecLogica(MV, offset, reg_base);
+    // EDX indica la posición de memoria inicial[cite: 26]
+    uint16_t dir_fisica = DirecLogica(MV, 0, EDX);
 
     if (tipo_llamada == 1) { 
-        sys_read(MV, cantidad, tamano, dir_fisica,  MV->registros[EAX]);
+        sys_read(MV, cantidad, tamano, dir_fisica, MV->registros[EAX]);
     } 
     else if (tipo_llamada == 2) { 
-        sys_write(MV, cantidad, tamano, dir_fisica,  MV->registros[EAX]);
+        sys_write(MV, cantidad, tamano, dir_fisica, MV->registros[EAX]);
     }
     //  MV->registros[EAX] = FORMATO
 }

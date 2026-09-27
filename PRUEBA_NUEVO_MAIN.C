@@ -60,6 +60,14 @@ void inicializacion(char nombre_arch[], TipoMV *MV,uint16_t *tam_codigo) {
         MV->registros[DS] = 1 << 16;
         MV->registros[0] = MV->registros[CS];
 
+        // Limpiamos e inicializamos los registros Y LA MEMORIA
+        for(int i = 0; i < REGISTROS; i++) {
+             MV->registros[i] = 0;
+        }
+        for(int i = 0; i < MEMORIA; i++) {
+             MV->memoria[i] = 0;
+        }
+
         // Guardamos las instrucciones en el code segment de la memoria
         int desp = 0;
         while (fread(&MV->memoria[MV->registros[CS] + desp], sizeof(uint8_t), 1, arch) == 1) {
@@ -177,9 +185,8 @@ int main() {
     uint16_t tam_codigo;
     
     inicializacion("prueba.vmx", &MV, &tam_codigo);
-    
     // Descomentar si deseas ver el disassembler antes de ejecutar
-    // generar_disassembler(&MV, tam_codigo);
+    generar_disassembler(&MV, tam_codigo);
     
     printf("\n--- Iniciando Ejecucion ---\n");
     ejecucion(&MV);

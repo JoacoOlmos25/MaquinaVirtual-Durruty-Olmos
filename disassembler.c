@@ -62,7 +62,7 @@ void generar_disassembler(TipoMV *MV, int tam_codigo) {
         char str_opB[32] = "";
         int offset = 1;
 
-        // LEER OPERANDO B PRIMERO (El orden en memoria está invertido)[cite: 11]
+        // LEER OPERANDO B PRIMERO (El orden en memoria está invertido)
         if (tipo_opB != 0) {
             if (tipo_opB == 1) { 
                 int reg = MV->memoria[ip_actual + offset];
@@ -80,7 +80,7 @@ void generar_disassembler(TipoMV *MV, int tam_codigo) {
             offset += tipo_opB;
         }
 
-        // LEER OPERANDO A SEGUNDO[cite: 11]
+        // LEER OPERANDO A SEGUNDO
         if (tipo_opA != 0) {
             if (tipo_opA == 1) { 
                 int reg = MV->memoria[ip_actual + offset];

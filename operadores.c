@@ -76,9 +76,7 @@ void guardarDato(TipoMV *MV,int OP ,int32_t dato){
 void MOV(TipoMV *MV){
     int32_t val_origen = obtenerDato(MV, OP2);
     guardarDato(MV, OP1, val_origen);
-    // 3. Evaluamos CC. 
-    // Usamos el mismo valor puro casteado a 64 bits para que actualizaCC 
-    // modifique N y Z, dejando C y V en 0 como exige la tabla
+
     int64_t res_con_signo = (int64_t)val_origen;
     uint64_t res_sin_signo = (uint64_t)val_origen & 0xFFFFFFFF; 
     
@@ -271,8 +269,117 @@ void RND(TipoMV *MV){
     actualizaCC(MV, (int64_t)resultado, (uint64_t)resultado & 0xFFFFFFFF);
 }
 
-void SYS(TipoMV *MV){
+//Funciones auxiliares para modularizar SYS
+//##############################################################################
+void imprimir_segun_formato(uint32_t dato, uint32_t formato, uint16_t tamano) {
+    if (formato & 0x01) printf("%d ", dato); // Decimal
+    
+    if (formato & 0x02) { //ASCII
+        if (dato >= 32 && dato <= 126) printf("%c ", dato);
+        else printf(". "); // Si no es imprimible, escribe un punto
+    }
+    
+    if (formato & 0x04) printf("0o%o ", dato); // Octal
+    
+    if (formato & 0x08) printf("0x%X ", dato); // Hexadecimal
+    
+    if (formato & 0x10) { // Binario
+        printf("0b");
+        for (int b = (tamano * 8) - 1; b >= 0; b--) {
+            printf("%d", (dato >> b) & 1);
+        }
+        printf(" ");
+    }
+    printf("\n");
+}
 
+void sys_write(TipoMV *MV, uint16_t cantidad, uint16_t tamano, uint32_t dir_fisica, uint32_t formato) {
+    for (int i = 0; i < cantidad; i++) {
+        // Imprimimos el prompt de la direccion fisica del dato
+        printf("[%04X]: ", dir_fisica);
+        // Extraer de memoria ensamblando los bytes según el tamaño
+        uint32_t dato = 0;
+        for (int b = 0; b < tamano; b++) {
+            dato = (dato << 8) | MV->memoria[dir_fisica + b]; 
+        }
+        imprimir_segun_formato(dato, formato, tamano);
+        
+        // Avanzamos a la siguiente celda dependiendo del tamaño del valor
+        dir_fisica += tamano; 
+    }
+}
+
+void sys_read(TipoMV *MV, uint16_t cantidad, uint16_t tamano, uint32_t dir_fisica, uint32_t formato) {
+    for (int i = 0; i < cantidad; i++) {
+        printf("[%04X]: ", dir_fisica); 
+
+        uint32_t dato_ingresado = 0;
+        
+        if (formato & 0x01) { 
+            // Decimal
+            scanf("%d", &dato_ingresado);
+        } 
+        else if (formato & 0x02) { 
+            // Carácter ASCII
+            char c;
+            scanf(" %c", &c);
+            dato_ingresado = c;
+        } 
+        else if (formato & 0x04) { 
+            // Octal
+            scanf("%o", &dato_ingresado);
+        } 
+        else if (formato & 0x08) { 
+            // Hexadecimal[cite: 7]
+            scanf("%x", &dato_ingresado);
+        } 
+        else if (formato & 0x10) { 
+            // Binario
+            // Como scanf no soporta formato binario nativamente en C estándar, 
+            // capturamos el string y usamos strtol para la conversión a numero binario.
+            char strbinario[33];
+            scanf("%32s", strbinario);
+            
+            char *ptr = strbinario;
+            // Si el usuario incluye el prefijo '0b' o '0B', lo ignoramos adelantando el puntero
+            if (strbinario[0] == '0' && (strbinario[1] == 'b' || strbinario[1] == 'B')) {
+                ptr += 2; 
+            }
+            // strtol convierte la cadena en base 2 a un número entero
+            dato_ingresado = (uint32_t)strtol(ptr, NULL, 2);
+        }
+
+
+        for (int b = tamano - 1; b >= 0; b--) {
+            MV->memoria[dir_fisica + b] = dato_ingresado & 0xFF;
+            dato_ingresado >>= 8;
+        }
+
+        dir_fisica += tamano;
+    }
+}
+//##############################################################################
+void SYS(TipoMV *MV){
+    // Averiguamos si es READ (1) o WRITE (2)[cite: 7]
+    int32_t tipo_llamada = obtenerDato(MV, OP1);
+
+    // ECX indica la cantidad en los 2 bytes bajos y el tamaño en los 2 bytes altos
+    uint16_t cantidad = MV->registros[ECX] & 0xFFFF;
+    uint16_t tamano = (MV->registros[ECX] >> 16) & 0xFFFF;
+
+    // EDX apunta a la memoria inicial[cite: 7]
+
+    int16_t offset = MV->registros[EDX] & 0xFFFF;
+    uint8_t reg_base = (MV->registros[EDX] >> 16) & 0x1F;
+    uint16_t dir_fisica = DirecLogica(MV, offset, reg_base);
+
+    if (tipo_llamada == 1) { 
+        sys_read(MV, cantidad, tamano, dir_fisica,  MV->registros[EAX]);
+    } 
+    else if (tipo_llamada == 2) { 
+        sys_write(MV, cantidad, tamano, dir_fisica,  MV->registros[EAX]);
+    }
+    //  MV->registros[EAX] = FORMATO
 }
 
 void JMP(TipoMV *MV){

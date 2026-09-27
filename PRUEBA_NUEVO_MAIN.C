@@ -183,7 +183,7 @@ int main() {
     TipoMV MV;
     uint16_t tam_codigo;
     
-    inicializacion("prueba.vmx", &MV, &tam_codigo);
+    inicializacion("testDecrementar.vmx", &MV, &tam_codigo);
     // Descomentar si deseas ver el disassembler antes de ejecutar
     generar_disassembler(&MV, tam_codigo);
     

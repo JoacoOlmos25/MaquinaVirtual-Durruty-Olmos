@@ -74,5 +74,4 @@ void TraigoDeMemoria(TipoMV *MV, int OP){
 //     MV->segmentos[1].base=51;
 //     TraigoDeMemoria(&MV, OP1);
 //     printf("%d",MV->registro[MBR]);
-//     return 0;
-// }
+// // }

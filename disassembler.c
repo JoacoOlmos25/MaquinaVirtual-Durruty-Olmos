@@ -47,9 +47,9 @@ void generar_disassembler(TipoMV *MV, int tam_codigo) {
 
         int total_bytes =tipo_opA + tipo_opB; //cant de bytes a leer segun operando
         fprintf(arch, "[%04X] ", ip_actual);
-        fprintf(arch, "%02X", operacion);
+        fprintf(arch, "%02X ", operacion);
 
-        for (int i = total_bytes; i>0; i--) {
+        for (int i = 1; i <= total_bytes; i++) {
             fprintf(arch, "%02X ", MV->memoria[ip_actual + i]);
         }
         

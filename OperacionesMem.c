@@ -27,15 +27,36 @@ void lecturaDeMemoria(TipoMV *MV, int OP){
     MV -> registros[MAR] = 4 << 24 | dirlogica;
 }
 
-void CargaAMemoria(TipoMV *MV){
+void CargaAMemoria(TipoMV *MV, int OP){
     int32_t valor;
-    valor = MV ->registros[MAR] & 0xFF;
-    MV ->registros[valor] = MV ->memoria[MBR];
+    int i, leer;
+    lecturaDeMemoria(MV, OP);
+    valor = MV->registros[MAR] & Masc_Byte_Menos_Sig;
+    leer = (MV->registros[MAR] >> 28) & Masc_Byte_Menos_Sig;
+    for (i=0; i<leer; i++){
+        MV ->registros[valor + i] = (MV ->memoria[MBR] >> (4*(leer - i))) & Masc_Byte_Menos_Sig;
+    }    
 }
 
 void TraigoDeMemoria(TipoMV *MV, int OP){
     int32_t valor;
+    int i, leer;
     lecturaDeMemoria(MV, OP);
-    valor = MV->registros[MAR] & 0xFF;
-    MV->memoria[MBR] = MV->registros[valor];
+    valor = MV->registros[MAR] & Masc_Byte_Menos_Sig;
+    leer = (MV->registros[MAR] >> 28) & Masc_Byte_Menos_Sig;
+    for (i=0; i < leer; i++){
+        MV->memoria[MBR] |= MV->registros[valor + i] << (leer - i);
+    } 
+}
+
+int main(){
+    MV->registro[DS]=1<<24 | 8;
+    MV->Memoria[59]=1;
+    MV->Memoria[60]=1;
+    MV->Memoria[61]=1;
+    MV->Memoria[62]=1;
+    MV->segmentos[1].base=51;
+    TraigoDeMemoria(&MV, OP1);
+    printf("%d",MV->registro[MBR]);
+    return 0;
 }

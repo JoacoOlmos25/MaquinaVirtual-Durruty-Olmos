@@ -9,12 +9,18 @@
 //Faltan las exepciones sobre si me caigo del data segment 
 
 uint16_t DirecLogica(TipoMV *MV, int32_t corrimiento, int8_t reg){
-    int seg;
-    uint16_t posini, offset;
-    seg = (MV -> registros[reg] >> 16) & 0xFFFF; //J cambie Masc_Byte_Menos_Sig -> 0xFFFF//accedo al segmento de la tabla segun el registro
-    //seg = MV -> registros[DS] >> 16; (harcodeado)
-    posini = MV -> tablaSegmento[seg].base; //& Masc_Byte_Menos_Sig; //traigo la posicion de memoria inicial
-    offset = MV -> registros[reg] & 0xFFFF; //J cambie Masc_Byte_Menos_Sig -> 0xFFFF//accedo al offset
+    // int seg;
+    // uint16_t posini, offset;
+    // seg = (MV -> registros[reg] >> 16) & 0xFFFF; //J cambie Masc_Byte_Menos_Sig -> 0xFFFF//accedo al segmento de la tabla segun el registro
+    // //seg = MV -> registros[DS] >> 16; (harcodeado)
+    // posini = MV -> tablaSegmento[seg].base; //& Masc_Byte_Menos_Sig; //traigo la posicion de memoria inicial
+    // offset = MV -> registros[reg] & 0xFFFF; //J cambie Masc_Byte_Menos_Sig -> 0xFFFF//accedo al offset
+    // return posini + offset + corrimiento;
+    // Casteamos a uint32_t antes del corrimiento para que C no rompa el signo
+    uint32_t registro_crudo = (uint32_t)MV->registros[reg];
+    int seg = (registro_crudo >> 16) & 0xFFFF;
+    uint16_t posini = MV->tablaSegmento[seg].base;
+    uint16_t offset = registro_crudo & 0xFFFF;
     return posini + offset + corrimiento;
 }
 

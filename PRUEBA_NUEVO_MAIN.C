@@ -53,13 +53,6 @@ void inicializacion(char nombre_arch[], TipoMV *MV,uint16_t *tam_codigo) {
             MV->tablaSegmento[i].tamano = 0xFFFF;
         }
 
-        // Limpiamos e inicializamos los registros
-        for(int i = 0; i < REGISTROS; i++)
-             MV->registros[i] = 0;
-        MV->registros[CS] = 0 << 16;
-        MV->registros[DS] = 1 << 16;
-        MV->registros[0] = MV->registros[CS];
-
         // Limpiamos e inicializamos los registros Y LA MEMORIA
         for(int i = 0; i < REGISTROS; i++) {
              MV->registros[i] = 0;
@@ -67,6 +60,12 @@ void inicializacion(char nombre_arch[], TipoMV *MV,uint16_t *tam_codigo) {
         for(int i = 0; i < MEMORIA; i++) {
              MV->memoria[i] = 0;
         }
+        // Limpiamos e inicializamos los registros
+        for(int i = 0; i < REGISTROS; i++)
+             MV->registros[i] = 0;
+        MV->registros[CS] = 0 << 16;
+        MV->registros[DS] = 1 << 16;
+        MV->registros[0] = MV->registros[CS];
 
         // Guardamos las instrucciones en el code segment de la memoria
         int desp = 0;

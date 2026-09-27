@@ -25,13 +25,20 @@ uint16_t DirecLogica(TipoMV *MV, int32_t corrimiento, int8_t reg){
 void lecturaDeMemoria(TipoMV *MV, int OP){
     int32_t valor;
     int8_t reg;
-    uint16_t dirlogica, offset;
+    uint16_t dirlogica, offset, maxseg;
     valor = MV -> registros[OP];
     reg = valor & Masc_CodO;
     offset = (valor >> 8) & 0xFFFF;//cambie Masc_Compl por 0xFFFF;
     dirlogica = DirecLogica(MV, offset, reg); //tengo q ver si me cai del data segment
-    MV->registros[LAR] = dirlogica;
-    MV -> registros[MAR] = 4 << 24 | dirlogica;
+    int seg = (registro_crudo >> 16) & 0xFFFF;
+    maxseg= MV->tablaSegmento[seg].base + MV->tablaSegmento[seg].tamano;
+    if (maxseg < DirecLogica){
+        printf("Te caigaste de la memoria");
+    }
+    else{
+        MV->registros[LAR] = dirlogica;
+        MV -> registros[MAR] = 4 << 24 | dirlogica;
+    }
 }
 
 void CargaAMemoria(TipoMV *MV, int OP){

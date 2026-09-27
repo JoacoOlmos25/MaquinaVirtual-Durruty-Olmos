@@ -9,4 +9,3 @@ void lecturaDeMemoria(TipoMV *MV, int OP);
 void CargaAMemoria(TipoMV *MV, int OP);
 void TraigoDeMemoria(TipoMV *MV, int OP);
 
-#endif

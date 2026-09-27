@@ -6,8 +6,6 @@
 #include "mascaras.h"
 //Operaciones de memoria(LAR, MAR, MBR)
 
-//Faltan las exepciones sobre si me caigo del data segment 
-
 uint16_t DirecLogica(TipoMV *MV, int32_t corrimiento, int8_t reg){
     // int seg;
     // uint16_t posini, offset;
@@ -65,13 +63,3 @@ void TraigoDeMemoria(TipoMV *MV, int OP){
     MV->registros[MBR] = dato;
 }
 
-// int main(){
-//     MV->registro[DS]=1<<24 | 8;
-//     MV->Memoria[59]=1;
-//     MV->Memoria[60]=1;
-//     MV->Memoria[61]=1;
-//     MV->Memoria[62]=1;
-//     MV->segmentos[1].base=51;
-//     TraigoDeMemoria(&MV, OP1);
-//     printf("%d",MV->registro[MBR]);
-// // }

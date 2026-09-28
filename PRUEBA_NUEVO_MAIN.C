@@ -130,7 +130,6 @@ void ejecucion(TipoMV *MV) {
     MV->registros[IP] = MV->registros[CS];
 
     while (MV->registros[IP] != 0xFFFFFFFF) {
-        
         // Extraemos los 16 bits altos (segmento) y los 16 bits bajos (offset) del IP
         uint16_t seg_cs = (MV->registros[IP] >> 16) & 0xFFFF;
         uint16_t offset_ip = MV->registros[IP] & 0xFFFF;

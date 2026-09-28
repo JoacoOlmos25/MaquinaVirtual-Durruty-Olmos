@@ -1,4 +1,21 @@
-[0000] 10 1B 0D                | MOV        EDX,        DS
-[0003] 11 40 00 0D             | ADD        EDX,     16384
-[0007] 10 0A 00 00 8D          | MOV      [EDX],       EAX
-[000C] 0F                      | STOP 
+[0000] 10 00 01 0A             | MOV        EAX,         1
+[0004] 10 1B 0D                | MOV        EDX,        DS
+[0007] 11 00 04 0D             | ADD        EDX,         4
+[000B] 1E 00 04 0C             | LDH        ECX,         4
+[000F] 1D 00 01 0C             | LDL        ECX,         1
+[0013] 00 00 01                | SYS          1
+[0016] 18 10 10                | XOR         AC,        AC
+[0019] 10 00 00 8D 0A          | MOV        EAX,     [EDX]
+[001E] 15 00 00 0A             | CMP        EAX,         0
+[0022] 04 00 33                | JZ          51
+[0025] 08 00 2C                | JNN         44
+[0028] 11 00 01 10             | ADD         AC,         1
+[002C] 1A 00 01 0A             | SHL        EAX,         1
+[0030] 01 00 1E                | JMP         30
+[0033] 11 00 04 0D             | ADD        EDX,         4
+[0037] 10 10 00 00 8D          | MOV      [EDX],        AC
+[003C] 10 00 01 0A             | MOV        EAX,         1
+[0040] 1E 00 04 0C             | LDH        ECX,         4
+[0044] 1D 00 01 0C             | LDL        ECX,         1
+[0048] 00 00 02                | SYS          2
+[004B] 0F                      | STOP 

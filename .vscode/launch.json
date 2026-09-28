@@ -3,28 +3,20 @@
     // Hover to view descriptions of existing attributes.
     // For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
  
-  "version": "0.2.0",
+ "version": "0.2.0",
   "configurations": [
     {
-      "name": "C/C++: Depurar archivo activo",
+      "name": "C/C++: Depurar en Mac",
       "type": "cppdbg",
       "request": "launch",
-      "program": "${fileDirname}\\${fileBasenameNoExtension}.exe",
-      "args": [],
+      "program": "${workspaceFolder}/correrMV",
+      "args": ["prueba.vmx"],
       "stopAtEntry": false,
-      "cwd": "${fileDirname}",
+      "cwd": "${workspaceFolder}",
       "environment": [],
       "externalConsole": false,
-      "MIMode": "gdb",
-      "miDebuggerPath": "gdb.exe",
-      "setupCommands": [
-        {
-          "description": "Habilitar la impresión con sangría",
-          "text": "-enable-pretty-printing",
-          "ignoreFailures": true
-        }
-      ],
-      "preLaunchTask": "C/C++: gcc.exe compilar el archivo activo"
+      "MIMode": "lldb",
+      "preLaunchTask": "C/C++: clang compilar archivo activo"
     }
   ]
 }

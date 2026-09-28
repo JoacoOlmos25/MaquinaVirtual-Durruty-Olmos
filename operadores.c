@@ -3,133 +3,435 @@
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include "mascaras.h"
+#include "OperacionesMem.h"
 
 //Los 28 operaciones del ASSEMBLER
 // firmas de los operadores
 
-void MOV(TipoMV *MV){
-
-    // 1. EXTRAER TIPO Y VALOR DEL OPERANDO 2 (ORIGEN)
-    // Desplazamos 24 bits a la derecha para que quede solo el byte superior (el tipo)
-    uint8_t tipo_op2 = MV->registros[OP2] >> 24;
-    
-    // Usamos una máscara AND para quedarnos solo con los 3 bytes inferiores (el valor)
-    int32_t val_op2 = MV->registros[OP2] & 0x00FFFFFF;
-
-    int32_t dato_a_mover = 0;
-
-    // Evaluamos de dónde sacar el dato original
-    if (tipo_op2 == 1) { // Es un registro
-        // ¡LA MAGIA OCURRE AQUÍ! Si val_op2 es 10, lee MV->registros[10] (EAX)
-        dato_a_mover = MV->registros[val_op2]; 
-    } 
-    else if (tipo_op2 == 2) { // Es un inmediato
-        // El dato es directamente el valor que extrajimos
-        dato_a_mover = val_op2;
-    }
-    // (Faltaría la lógica si tipo_op2 == 3, que es memoria)
-
-
-    // 2. EXTRAER TIPO Y VALOR DEL OPERANDO 1 (DESTINO)
-    uint8_t tipo_op1 = MV->registros[OP1] >> 24;
-    int32_t val_op1 = MV->registros[OP1] & 0x00FFFFFF;
-
-    // Evaluamos dónde guardar el dato
-    if (tipo_op1 == 1) { // Es un registro
-        // Si val_op1 es 10, esto equivale a hacer MV->registros[EAX] = 2;
-        MV->registros[val_op1] = dato_a_mover;
-    }
-    // (Faltaría la lógica si tipo_op1 == 3, que es guardar en memoria)
-
-    
-    // 3. ACTUALIZAR REGISTRO CC (Flags)
-    // El apunte indica que MOV afecta los flags de signo (N) y cero (Z)[cite: 6].
-    // ... lógica del registro CC ...
-
+uint32_t obtenerDato(TipoMV *MV, int OP){
+    uint32_t dato;
+    uint8_t tipo;
+    tipo = MV->registros[OP] >> 24; 
+    dato = MV->registros[OP] & 0x00FFFFFF;//seteo el valor en 24 bits
+    if (tipo == 1){ //registro
+        dato = MV->registros[dato];
+    }else
+        if (tipo == 2) {//inmediato
+            if ((dato >> 15) == 1 ){//negativo
+                dato = 0xFFFF0000 | dato;
+            }
+        }else{
+            TraigoDeMemoria(MV,OP);
+            dato = MV->registros[MBR];    
+        }
+    return dato;
 }
 
-void ADD(TipoMV *MV){
+void actualizaCC(TipoMV *MV, int64_t res_con_signo, uint64_t res_sin_signo) {
+    MV->registros[CC] &= 0x0FFFFFFF;
+    int32_t res32 = (int32_t)res_con_signo;
 
+    // La 'U' (Unsigned) evita el comportamiento indefinido al tocar el bit 31
+    if (res32 < 0) {
+        MV->registros[CC] |= (1U << 31);
+    }
+    if (res32 == 0) {
+        MV->registros[CC] |= (1 << 30);
+    }
+    if (res_sin_signo > 0xFFFFFFFF) {
+        MV->registros[CC] |= (1 << 29);
+    }
+    if (res_con_signo > 2147483647LL || res_con_signo < -2147483648LL) { 
+        MV->registros[CC] |= (1 << 28);
+    }
+}
+
+void guardarDato(TipoMV *MV,int OP ,int32_t dato){ 
+   // 1. Extraemos el tipo desplazando 24 bits lógicos a la derecha
+    uint8_t tipo = MV->registros[OP] >> 24;
+    
+    int32_t valor_bruto = MV->registros[OP] & 0x00FFFFFF;
+
+    if (tipo == 1) { 
+        // Es un Registro (1 byte)
+        MV->registros[valor_bruto] = dato;
+    } 
+    else if (tipo == 3) { 
+        MV->registros[MBR] = dato;
+        lecturaDeMemoria(MV, OP);
+        CargaAMemoria(MV,OP);
+    }
+}
+
+void MOV(TipoMV *MV){
+    int32_t val_origen = obtenerDato(MV, OP2);
+    guardarDato(MV, OP1, val_origen);
+
+    int64_t res_con_signo = (int64_t)val_origen;
+    uint64_t res_sin_signo = (uint64_t)val_origen & 0xFFFFFFFF; 
+    
+    actualizaCC(MV, res_con_signo, res_sin_signo);
+}
+
+void ADD(TipoMV *MV) {
+    int32_t val_destino = obtenerDato(MV, OP1);
+    int32_t val_origen = obtenerDato(MV, OP2);
+    // Calculamos los resultados en 64 bits para evaluar desbordes
+    
+    // Resultado con signo tradicional
+    int64_t res_con_signo = (int64_t)val_destino + (int64_t)val_origen;
+    // Resultado sin signo usando máscaras AND
+    uint64_t res_sin_signo = ((uint64_t)val_destino & 0xFFFFFFFF) + ((uint64_t)val_origen & 0xFFFFFFFF);
+    
+    guardarDato(MV, OP1, (int32_t)res_con_signo);//HAY QUE MODIFICARLO CON RESPECTO A LAS FUNCIONES DE operacionesMem.c
+    // Actualizamos las banderas N, Z, C, y V
+    actualizaCC(MV, res_con_signo, res_sin_signo);
 }
 
 void SUB(TipoMV *MV){
+    int32_t val_destino = obtenerDato(MV, OP1);
+    int32_t val_origen = obtenerDato(MV, OP2);
 
+    int64_t res_con_signo = (int64_t)val_destino - (int64_t)val_origen;
+    uint64_t res_sin_signo = ((uint64_t)val_destino & 0xFFFFFFFF) - ((uint64_t)val_origen & 0xFFFFFFFF);
+
+    guardarDato(MV, OP1, (int32_t)res_con_signo);
+    actualizaCC(MV, res_con_signo, res_sin_signo);
 }
 
 void MUL(TipoMV *MV){
-    
+    int32_t val_destino = obtenerDato(MV, OP1);
+    int32_t val_origen = obtenerDato(MV, OP2);
+
+    int64_t res_con_signo = (int64_t)val_destino * (int64_t)val_origen;
+    uint64_t res_sin_signo = ((uint64_t)val_destino & 0xFFFFFFFF) * ((uint64_t)val_origen & 0xFFFFFFFF);
+
+    guardarDato(MV, OP1, (int32_t)res_con_signo);
+    actualizaCC(MV, res_con_signo, res_sin_signo);
 }
 
 void DIV(TipoMV *MV){
+    int32_t val_destino = obtenerDato(MV, OP1);
+    int32_t val_origen = obtenerDato(MV, OP2);
 
+    if (val_origen == 0) {
+        printf("ERROR: Division por cero.\n");
+        MV->registros[IP] = 0xFFFFFFFF; 
+        return; 
+    }
+
+    int64_t res_con_signo = (int64_t)val_destino / (int64_t)val_origen;
+    uint64_t res_sin_signo = ((uint64_t)val_destino & 0xFFFFFFFF) / ((uint64_t)val_origen & 0xFFFFFFFF);
+    
+    guardarDato(MV, OP1, (int32_t)res_con_signo);
+     // El DIV guarda obligatoriamente el resto en el registro AC
+    MV->registros[AC] = val_destino % val_origen;
+    actualizaCC(MV, res_con_signo, res_sin_signo);
 }
 
 void CMP(TipoMV *MV){
+    //Igual que sub pero sin guardar el dato
+    int32_t val_destino = obtenerDato(MV, OP1);
+    int32_t val_origen = obtenerDato(MV, OP2);
 
+    int64_t res_con_signo = (int64_t)val_destino - (int64_t)val_origen;
+    uint64_t res_sin_signo = ((uint64_t)val_destino & 0xFFFFFFFF) - ((uint64_t)val_origen & 0xFFFFFFFF);
+    
+    actualizaCC(MV, res_con_signo, res_sin_signo);
 }
 
 void AND(TipoMV *MV){
+    int32_t val_destino = obtenerDato(MV, OP1);
+    int32_t val_origen = obtenerDato(MV, OP2);
 
+    int64_t res_con_signo = (int64_t)val_destino & (int64_t)val_origen;
+    uint64_t res_sin_signo = ((uint64_t)val_destino & 0xFFFFFFFF) & ((uint64_t)val_origen & 0xFFFFFFFF);
+
+    guardarDato(MV, OP1, (int32_t)res_con_signo);
+    actualizaCC(MV, res_con_signo, res_sin_signo);
 }
 
 void OR(TipoMV *MV){
+    int32_t val_destino = obtenerDato(MV, OP1);
+    int32_t val_origen = obtenerDato(MV, OP2);
 
+    int64_t res_con_signo = (int64_t)val_destino | (int64_t)val_origen;
+    uint64_t res_sin_signo = ((uint64_t)val_destino & 0xFFFFFFFF) | ((uint64_t)val_origen & 0xFFFFFFFF);
+
+    guardarDato(MV, OP1, (int32_t)res_con_signo);
+    actualizaCC(MV, res_con_signo, res_sin_signo);
 }
 
 void XOR(TipoMV *MV){
+    int32_t val_destino = obtenerDato(MV, OP1);
+    int32_t val_origen = obtenerDato(MV, OP2);
 
+    int64_t res_con_signo = (int64_t)val_destino ^ (int64_t)val_origen;
+    uint64_t res_sin_signo = ((uint64_t)val_destino & 0xFFFFFFFF) ^ ((uint64_t)val_origen & 0xFFFFFFFF);
+
+    guardarDato(MV, OP1, (int32_t)res_con_signo);
+    actualizaCC(MV, res_con_signo, res_sin_signo);
 }
 
 void SWAP(TipoMV *MV){
+    int32_t val_destino = obtenerDato(MV, OP1);
+    int32_t val_origen = obtenerDato(MV, OP2);
 
+    // Intercambio cruzado hay que modificar estas funciones
+    guardarDato(MV,OP1,val_origen);
+    guardarDato(MV, OP2, val_destino);
+
+    // Afecta a CC simulando un XOR entre ambos pero no le cambio el valor 
+    int64_t res_con_signo = (int64_t)val_destino ^ (int64_t)val_origen;
+    uint64_t res_sin_signo = ((uint64_t)val_destino & 0xFFFFFFFF) ^ ((uint64_t)val_origen & 0xFFFFFFFF);
+    actualizaCC(MV, res_con_signo, res_sin_signo);
 }
 
 void SHL(TipoMV *MV){
+    // Casteamos a uint32_t para que C desplace los bits sin importar el signo
+    uint32_t val_destino = (uint32_t)obtenerDato(MV, OP1);
+    int32_t val_origen = obtenerDato(MV, OP2);
 
+    // El desplazamiento en 64 bits sin signo preserva el acarreo de forma segura
+    uint64_t res_64 = (uint64_t)val_destino << val_origen;
+    int32_t res_32 = (int32_t)(res_64 & 0xFFFFFFFF);
+
+    guardarDato(MV, OP1, res_32);
+    actualizaCC(MV, (int64_t)res_32, res_64);
 }
 
 void SHR(TipoMV *MV){
+    uint32_t val_destino = (uint32_t)obtenerDato(MV, OP1);  //seteo asi el compilador hace el corrimiento sin desplazar el signo;
+    int32_t val_origen = obtenerDato(MV, OP2);
 
+    int64_t res_con_signo = (int64_t)(val_destino >> val_origen);
+    uint64_t res_sin_signo = ((uint64_t)val_destino & 0xFFFFFFFF) >> val_origen;
+
+
+    guardarDato(MV, OP1, (int32_t)res_con_signo);
+    actualizaCC(MV, res_con_signo, res_sin_signo);
 }
 
 void SAR(TipoMV *MV){
+    // Mantenemos el signo (int32_t) para que C propague el bit negativo
+    int32_t val_destino = obtenerDato(MV, OP1); 
+    int32_t val_origen = obtenerDato(MV, OP2);
 
+    int64_t res_con_signo = (int64_t)(val_destino >> val_origen);
+    uint64_t res_sin_signo = ((uint64_t)val_destino & 0xFFFFFFFF) >> val_origen;
+
+    guardarDato(MV, OP1, (int32_t)res_con_signo); 
+    actualizaCC(MV, res_con_signo, res_sin_signo);
 }
 
 void LDL(TipoMV *MV){
+    int32_t val_destino = obtenerDato(MV, OP1);
+    int32_t val_origen = obtenerDato(MV, OP2);
 
+    val_destino &= 0xFFFF0000;
+
+    int32_t mitad_baja_origen = val_origen & 0x0000FFFF;
+
+    int32_t resultado = val_destino | mitad_baja_origen;
+
+    guardarDato(MV, OP1, resultado);
+    actualizaCC(MV, (int64_t)resultado, (uint64_t)resultado & 0xFFFFFFFF);
 }
 
 void LDH(TipoMV *MV){
+    int32_t val_destino = obtenerDato(MV, OP1);
+    int32_t val_origen = obtenerDato(MV, OP2);
 
+    val_destino &= 0x0000FFFF;
+
+    int32_t mitad_alta_origen = (val_origen & 0x0000FFFF) << 16;
+
+    int32_t resultado = val_destino | mitad_alta_origen;
+
+    guardarDato(MV, OP1, resultado);
+    actualizaCC(MV, (int64_t)resultado, (uint64_t)resultado & 0xFFFFFFFF);
 }
 
 void RND(TipoMV *MV){
+    int32_t limite = obtenerDato(MV, OP2);
 
+    int32_t resultado = rand() % (limite + 1);
+
+    guardarDato(MV, OP1, resultado);
+    actualizaCC(MV, (int64_t)resultado, (uint64_t)resultado & 0xFFFFFFFF);
 }
 
-void SYS(TipoMV *MV){}
+//Funciones auxiliares para modularizar SYS
+//##############################################################################
+void imprimir_segun_formato(uint32_t dato, uint32_t formato, uint16_t tamano) {
+    if (formato & 0x01) printf("%d ", dato); // Decimal
+    
+    if (formato & 0x02) { //ASCII
+        if (dato >= 32 && dato <= 126) printf("%c ", dato);
+        else printf(". "); // Si no es imprimible, escribe un punto
+    }
+    
+    if (formato & 0x04) printf("0o%o ", dato); // Octal
+    
+    if (formato & 0x08) printf("0x%X ", dato); // Hexadecimal
+    
+    if (formato & 0x10) { // Binario
+        printf("0b");
+        for (int b = (tamano * 8) - 1; b >= 0; b--) {
+            printf("%d", (dato >> b) & 1);
+        }
+        printf(" ");
+    }
+    printf("\n");
+}
 
-void JMP(TipoMV *MV){}
+void sys_write(TipoMV *MV, uint16_t cantidad, uint16_t tamano, uint32_t dir_fisica, uint32_t formato) {
+   for (int i = 0; i < cantidad; i++) {
+        printf("[%04X]: ", dir_fisica);
+        
+        // Extracción Big Endian estándar
+        uint32_t dato = 0;
+        for (int b = 0; b < tamano; b++) {
+            dato = (dato << 8) | MV->memoria[dir_fisica + b]; 
+        }
+        imprimir_segun_formato(dato, formato, tamano);
+        
+        dir_fisica += tamano; 
+    }
+}
 
-void JP(TipoMV *MV){}
+void sys_read(TipoMV *MV, uint16_t cantidad, uint16_t tamano, uint32_t dir_fisica, uint32_t formato) {
+    for (int i = 0; i < cantidad; i++) {
+        printf("[%04X]: ", dir_fisica); 
 
-void JN(TipoMV *MV){}
+        uint32_t dato_ingresado = 0;
+        
+        if (formato & 0x01) scanf("%d", &dato_ingresado);
+        else if (formato & 0x02) { 
+            char c;
+            scanf(" %c", &c);
+            dato_ingresado = c;
+        } 
+        else if (formato & 0x04) scanf("%o", &dato_ingresado);
+        else if (formato & 0x08) scanf("%x", &dato_ingresado);
+        else if (formato & 0x10) { 
+            char strbinario[33];
+            scanf("%32s", strbinario);
+            char *ptr = strbinario;
+            if (strbinario[0] == '0' && (strbinario[1] == 'b' || strbinario[1] == 'B')) ptr += 2; 
+            dato_ingresado = (uint32_t)strtol(ptr, NULL, 2);
+        }
 
-void JZ(TipoMV *MV){}
+        // Inyección Big Endian estándar (desde el byte más significativo)
+        for (int b = tamano - 1; b >= 0; b--) {
+            MV->memoria[dir_fisica + b] = dato_ingresado & 0xFF;
+            dato_ingresado >>= 8;
+        }
 
-void JC(TipoMV *MV){}
+        dir_fisica += tamano;
+    }
+}
+//##############################################################################
+void SYS(TipoMV *MV){
+    int32_t tipo_llamada = obtenerDato(MV, OP1);
 
-void JV(TipoMV *MV){}
+    // ECX indica la cantidad en los 2 bytes bajos y el tamaño en los 2 bytes altos[cite: 26]
+    uint16_t cantidad = MV->registros[ECX] & 0xFFFF;
+    uint16_t tamano = (MV->registros[ECX] >> 16) & 0xFFFF;
 
-void JNP(TipoMV *MV){}
+    // EDX indica la posición de memoria inicial[cite: 26]
+    uint16_t dir_fisica = DirecLogica(MV, 0, EDX);
 
-void JNN(TipoMV *MV){}
+    if (tipo_llamada == 1) { 
+        sys_read(MV, cantidad, tamano, dir_fisica, MV->registros[EAX]);
+    } 
+    else if (tipo_llamada == 2) { 
+        sys_write(MV, cantidad, tamano, dir_fisica, MV->registros[EAX]);
+    }
+    //  MV->registros[EAX] = FORMATO
+}
 
-void JNZ(TipoMV *MV){}
+void JMP(TipoMV *MV){
+    MV->registros[IP] = obtenerDato(MV, OP1);
+}
 
-void NOT(TipoMV *MV){}
+void JP(TipoMV *MV){
+    // Aislamos N (bit 31) y Z (bit 30)
+    int n = (MV->registros[CC] >> 31) & 1;
+    int z = (MV->registros[CC] >> 30) & 1;
 
+    if (n == 0 && z == 0) {
+        MV->registros[IP] = obtenerDato(MV, OP1);
+    }
+}
 
-void STOP(TipoMV *MV){}
+void JN(TipoMV *MV){
+    int n = (MV->registros[CC] >> 31) & 1;
+    if (n == 1) {
+        MV->registros[IP] = obtenerDato(MV, OP1);
+    }
+}
+
+void JZ(TipoMV *MV){
+    int z = (MV->registros[CC] >> 30) & 1;
+    // La condición exige que Z sea igual a 1 (resultado anterior == 0)
+    if (z == 1) {
+        MV->registros[IP] = obtenerDato(MV, OP1);
+    }
+}
+
+void JC(TipoMV *MV){
+    int c = (MV->registros[CC] >> 29) & 1;
+    
+    if (c == 1) {
+        MV->registros[IP] = obtenerDato(MV, OP1);
+    }
+}
+
+void JV(TipoMV *MV){
+     int v = (MV->registros[CC] >> 28) & 1;
+    
+    if (v == 1) {
+        MV->registros[IP] = obtenerDato(MV, OP1);
+    }
+}
+
+void JNP(TipoMV *MV){
+    int n = (MV->registros[CC] >> 31) & 1;
+    int z = (MV->registros[CC] >> 30) & 1;
+
+    if (n == 1 || z == 1) {
+        MV->registros[IP] = obtenerDato(MV, OP1);
+    }
+}
+
+void JNN(TipoMV *MV){
+    int n = (MV->registros[CC] >> 31) & 1;
+    if (n == 0) {
+        MV->registros[IP] = obtenerDato(MV, OP1);
+    }
+}
+
+void JNZ(TipoMV *MV){
+    int z = (MV->registros[CC] >> 30) & 1;
+    if (z == 0) {
+        MV->registros[IP] = obtenerDato(MV, OP1);
+    }
+}
+
+void NOT(TipoMV *MV){
+
+    int32_t val = obtenerDato(MV, OP1);
+
+    int32_t res = ~val;
+
+    guardarDato(MV, OP1, res);
+
+    actualizaCC(MV, (int64_t)res, (uint64_t)res & 0xFFFFFFFF);
+}
+
+void STOP(TipoMV *MV){
+    MV->registros[IP]=-1;
+}
 

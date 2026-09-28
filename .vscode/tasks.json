@@ -1,16 +1,16 @@
 {
     "tasks": [
         {
-            "type": "cppbuild",
+            "type": "shell",
             "label": "C/C++: clang compilar archivo activo",
             "command": "/usr/bin/clang",
             "args": [
                 "-fcolor-diagnostics",
                 "-fansi-escape-codes",
                 "-g",
-                "*.c", 
+                "*.c",
                 "-o",
-                "${workspaceFolder}/testeoCargaMemoria"
+                "${workspaceFolder}/correrMV"
             ],
             "options": {
                 "cwd": "${workspaceFolder}"

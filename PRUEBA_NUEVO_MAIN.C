@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdint.h>
+#include <string.h>
 #include "operadores.h"
 #include "mascaras.h"
 #include "MaquinaVirtual.h"
@@ -129,7 +130,6 @@ void ejecucion(TipoMV *MV) {
     MV->registros[IP] = MV->registros[CS];
 
     while (MV->registros[IP] != 0xFFFFFFFF) {
-        
         // Extraemos los 16 bits altos (segmento) y los 16 bits bajos (offset) del IP
         uint16_t seg_cs = (MV->registros[IP] >> 16) & 0xFFFF;
         uint16_t offset_ip = MV->registros[IP] & 0xFFFF;
@@ -179,13 +179,35 @@ void ejecucion(TipoMV *MV) {
     }
 }
 
-int main() {
+// int main() {
+//     TipoMV MV;
+//     uint16_t tam_codigo;
+    
+//     inicializacion("testDecrementar.vmx", &MV, &tam_codigo);
+//     generar_disassembler(&MV, tam_codigo);
+    
+//     printf("\n--- Iniciando Ejecucion ---\n");
+//     ejecucion(&MV);
+//     printf("\n--- Ejecucion Finalizada ---\n");
+    
+//     return 0;
+// }
+int main(int argc, char *argv[]) {
+    if (argc < 2) {
+        printf("Error: Falta el archivo .vmx.\n");
+        printf("Uso: ./testeoCargaMemoria archivo.vmx [-d]\n");
+        return 1;
+    }
+
     TipoMV MV;
     uint16_t tam_codigo;
     
-    inicializacion("testDecrementar.vmx", &MV, &tam_codigo);
-    // Descomentar si deseas ver el disassembler antes de ejecutar
-    generar_disassembler(&MV, tam_codigo);
+    inicializacion(argv[1], &MV, &tam_codigo);
+    
+    // Verificamos si se pasó la bandera opcional "-d" en el segundo argumento[cite: 24, 25]
+    if (argc >= 3 && strcmp(argv[2], "-d") == 0) {
+        generar_disassembler(&MV, tam_codigo);
+    }
     
     printf("\n--- Iniciando Ejecucion ---\n");
     ejecucion(&MV);

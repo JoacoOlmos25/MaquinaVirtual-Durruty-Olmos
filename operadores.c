@@ -17,10 +17,14 @@ uint32_t obtenerDato(TipoMV *MV, int OP){
     if (tipo == 1){ //registro
         dato = MV->registros[dato];
     }else
-        if (tipo == 2) {//inmediato
-            if ((dato >> 15) == 1 ){//negativo
-                dato = 0xFFFF0000 | dato;
-            }
+       if (tipo == 2) { // Inmediato
+        uint16_t inmediato_16 = dato & 0xFFFF;
+        if (inmediato_16 & 0x8000) {
+            // Es negativo. Extendemos el signo encendiendo los 16 bits superiores.
+            dato = 0xFFFF0000 | inmediato_16;
+        } else {
+            dato = inmediato_16;
+        }
         }else{
             TraigoDeMemoria(MV,OP);
             dato = MV->registros[MBR];    
@@ -32,9 +36,8 @@ void actualizaCC(TipoMV *MV, int64_t res_con_signo, uint64_t res_sin_signo) {
     MV->registros[CC] &= 0x0FFFFFFF;
     int32_t res32 = (int32_t)res_con_signo;
 
-    // La 'U' (Unsigned) evita el comportamiento indefinido al tocar el bit 31
     if (res32 < 0) {
-        MV->registros[CC] |= (1U << 31);
+        MV->registros[CC] |= (1 << 31);
     }
     if (res32 == 0) {
         MV->registros[CC] |= (1 << 30);
@@ -48,7 +51,7 @@ void actualizaCC(TipoMV *MV, int64_t res_con_signo, uint64_t res_sin_signo) {
 }
 
 void guardarDato(TipoMV *MV,int OP ,int32_t dato){ 
-   // 1. Extraemos el tipo desplazando 24 bits lógicos a la derecha
+   // Extraemos el tipo desplazando 24 bits lógicos a la derecha
     uint8_t tipo = MV->registros[OP] >> 24;
     
     int32_t valor_bruto = MV->registros[OP] & 0x00FFFFFF;
@@ -92,12 +95,15 @@ void ADD(TipoMV *MV) {
 void SUB(TipoMV *MV){
     int32_t val_destino = obtenerDato(MV, OP1);
     int32_t val_origen = obtenerDato(MV, OP2);
-
-    int64_t res_con_signo = (int64_t)val_destino - (int64_t)val_origen;
-    uint64_t res_sin_signo = ((uint64_t)val_destino & 0xFFFFFFFF) - ((uint64_t)val_origen & 0xFFFFFFFF);
+    if (val_origen >0){
+        val_origen= ~val_origen + 1;    
+    }
+    int64_t res_con_signo = (int64_t)val_destino + (int64_t)val_origen;
+    uint64_t res_sin_signo = ((uint64_t)val_destino & 0xFFFFFFFF) + ((uint64_t)val_origen & 0xFFFFFFFF);
 
     guardarDato(MV, OP1, (int32_t)res_con_signo);
     actualizaCC(MV, res_con_signo, res_sin_signo);
+    printf("\n0x%X \n",MV->registros[CC]);
 }
 
 void MUL(TipoMV *MV){
@@ -336,11 +342,11 @@ void sys_read(TipoMV *MV, uint16_t cantidad, uint16_t tamano, uint32_t dir_fisic
 void SYS(TipoMV *MV){
     int32_t tipo_llamada = obtenerDato(MV, OP1);
 
-    // ECX indica la cantidad en los 2 bytes bajos y el tamaño en los 2 bytes altos[cite: 26]
+    // ECX indica la cantidad en los 2 bytes bajos y el tamaño en los 2 bytes altos
     uint16_t cantidad = MV->registros[ECX] & 0xFFFF;
     uint16_t tamano = (MV->registros[ECX] >> 16) & 0xFFFF;
 
-    // EDX indica la posición de memoria inicial[cite: 26]
+    // EDX indica la posición de memoria inicial
     uint16_t dir_fisica = DirecLogica(MV, 0, EDX);
 
     if (tipo_llamada == 1) { 

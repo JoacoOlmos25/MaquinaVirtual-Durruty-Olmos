@@ -32,9 +32,8 @@ void actualizaCC(TipoMV *MV, int64_t res_con_signo, uint64_t res_sin_signo) {
     MV->registros[CC] &= 0x0FFFFFFF;
     int32_t res32 = (int32_t)res_con_signo;
 
-    // La 'U' (Unsigned) evita el comportamiento indefinido al tocar el bit 31
     if (res32 < 0) {
-        MV->registros[CC] |= (1U << 31);
+        MV->registros[CC] |= (1 << 31);
     }
     if (res32 == 0) {
         MV->registros[CC] |= (1 << 30);

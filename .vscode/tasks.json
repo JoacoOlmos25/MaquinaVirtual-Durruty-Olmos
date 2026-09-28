@@ -10,8 +10,7 @@
                 "-g",
                 "*.c", 
                 "-o",
-                "${workspaceFolder}/testeoCargaMemoria"
-            ],
+                "${workspaceFolder}/correrMV"            ],
             "options": {
                 "cwd": "${workspaceFolder}"
             },

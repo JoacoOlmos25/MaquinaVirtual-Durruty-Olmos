@@ -30,10 +30,11 @@ void lecturaDeMemoria(TipoMV *MV, int OP){
     reg = valor & Masc_CodO;
     offset = (valor >> 8) & 0xFFFF;//cambie Masc_Compl por 0xFFFF;
     dirlogica = DirecLogica(MV, offset, reg); //tengo q ver si me cai del data segment
-    int seg = (registro_crudo >> 16) & 0xFFFF;
+    int seg = (MV->registros[reg] >> 16) & 0xFFFF;
     maxseg= MV->tablaSegmento[seg].base + MV->tablaSegmento[seg].tamano;
-    if (maxseg < DirecLogica){
+    if (maxseg < dirlogica){
         printf("Te caigaste de la memoria");
+        exit(EXIT_FAILURE);
     }
     else{
         MV->registros[LAR] = dirlogica;

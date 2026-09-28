@@ -17,10 +17,14 @@ uint32_t obtenerDato(TipoMV *MV, int OP){
     if (tipo == 1){ //registro
         dato = MV->registros[dato];
     }else
-        if (tipo == 2) {//inmediato
-            if ((dato >> 15) == 1 ){//negativo
-                dato = 0xFFFF0000 | dato;
-            }
+       if (tipo == 2) { // Inmediato
+        uint16_t inmediato_16 = dato & 0xFFFF;
+        if (inmediato_16 & 0x8000) {
+            // Es negativo. Extendemos el signo encendiendo los 16 bits superiores.
+            dato = 0xFFFF0000 | inmediato_16;
+        } else {
+            dato = inmediato_16;
+        }
         }else{
             TraigoDeMemoria(MV,OP);
             dato = MV->registros[MBR];    

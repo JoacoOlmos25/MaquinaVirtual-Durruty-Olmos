@@ -134,6 +134,11 @@ void ejecucion(TipoMV *MV) {
         uint16_t seg_cs = (MV->registros[IP] >> 16) & 0xFFFF;
         uint16_t offset_ip = MV->registros[IP] & 0xFFFF;
         
+        //validacion para salir de la ejecucion si el cod no tiene la instruccion stop asi no salta error de segmento siempre.
+        if (offset_ip >= MV->tablaSegmento[seg_cs].tamano) {
+            break;
+        }
+
         // Calculamos la dirección física sumando la base del segmento y el offset
         int posmem = MV->tablaSegmento[seg_cs].base + offset_ip;
         

@@ -18,25 +18,25 @@ uint16_t DirecLogica(TipoMV *MV, int32_t corrimiento, int8_t reg){
     uint32_t registro_crudo = (uint32_t)MV->registros[reg];
     int seg = (registro_crudo >> 16) & 0xFFFF;
     uint16_t posini = MV->tablaSegmento[seg].base;
-    uint16_t offset = registro_crudo & 0xFFFF;
+    int16_t offset = registro_crudo & 0xFFFF;
     return posini + offset + corrimiento;
 }
 
 void lecturaDeMemoria(TipoMV *MV, int OP){
     int32_t valor;
     int8_t reg;
-    uint16_t dirlogica, offset, maxseg;
+    uint16_t offset, maxseg;
+    int16_t dirlogica;
     valor = MV -> registros[OP];
     reg = valor & Masc_CodO;
-    offset = (valor >> 8) & 0xFFFF;//cambie Masc_Compl por 0xFFFF;
+    offset = (int16_t)((valor >> 8) & 0xFFFF);
     dirlogica = DirecLogica(MV, offset, reg); //tengo q ver si me cai del data segment
     int seg = (MV->registros[reg] >> 16) & 0xFFFF;
-    maxseg= MV->tablaSegmento[seg].base + MV->tablaSegmento[seg].tamano;
     uint16_t base = MV->tablaSegmento[seg].base;
-    if (maxseg < dirlogica || base > dirlogica){
-        MV->registros[IP] = 0xFFFFFFFF;
-        printf("\n--- ERRROR DE SEGMENTO Ejecucion Finalizada ---\n");
-        exit(EXIT_FAILURE);
+    maxseg= base + MV->tablaSegmento[seg].tamano;
+    if (dirlogica < base || (dirlogica + 3) >= maxseg){
+        MV->registros[IP] = 0xFFFFFFFF; // Frenamos la ejecución
+        printf("\n--- ERROR DE SEGMENTO: Acceso denegado a memoria fisica [%04X] ---\n", dirlogica);
     }
     else{
         MV->registros[LAR] = dirlogica;

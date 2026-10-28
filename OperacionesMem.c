@@ -29,7 +29,7 @@ void lecturaDeMemoria(TipoMV *MV, int OP){
     int16_t dirlogica;
     valor = MV -> registros[OP];
     reg = valor & Masc_CodO;
-    offset = (int16_t)((valor >> 8) & 0xFFFF);
+    offset = (int16_t)((valor >> 8) & 0xFFFF);//puse le offset en int16 enn vez de uint16 porque se rompia cuando le insertabas un numero negativo y hacia que salte a cualquier lado 
     dirlogica = DirecLogica(MV, offset, reg); //tengo q ver si me cai del data segment
     int seg = (MV->registros[reg] >> 16) & 0xFFFF;
     uint16_t base = MV->tablaSegmento[seg].base;

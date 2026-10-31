@@ -1,16 +1,5 @@
- [0012] 49 6E 67 72 65 73 .. | "Ingrese un texto corto: "
- [002B] 4D 65 6D 6F 72 69 .. | "Memoria capturo: "
->[003D] 50 1E 0D             | MOV        EDX,        KS
- [0040] 91 00 00 0D          | ADD        EDX,         0
- [0044] 80 00 04             | SYS          4
- [0047] 50 1B 0D             | MOV        EDX,        DS
- [004A] 90 00 0F 0C          | MOV        ECX,        15
- [004E] 80 00 03             | SYS          3
- [0051] 50 1E 0D             | MOV        EDX,        KS
- [0054] 91 00 19 0D          | ADD        EDX,        25
- [0058] 80 00 0F             | SYS         15
- [005B] 80 00 04             | SYS          4
- [005E] 50 1B 0D             | MOV        EDX,        DS
- [0061] 80 00 04             | SYS          4
- [0064] 80 00 0F             | SYS         15
- [0067] 0E                   | RET  
+ [0012] 43 6F 6E 73 74 61 .. | "Constante protegida"
+>[0026] 50 1E 0D             | MOV        EDX,        KS
+ [0029] 91 00 00 0D          | ADD        EDX,         0
+ [002D] B0 00 41 00 00 2D    | MOV     b[EDX],        65
+ [0033] 0E                   | RET  

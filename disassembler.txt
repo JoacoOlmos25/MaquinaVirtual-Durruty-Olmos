@@ -1,28 +1,16 @@
- [0023] 48 6F 6C 61 20 4D .. | "Hola MV2!"
- [002D] 4B 08                | PUSH        BP
- [002F] 50 07 08             | MOV         BP,        SP
- [0032] D0 00 08 88 0A       | MOV        EAX,   l[BP+8]
- [0037] D1 00 0C 88 0A       | ADD        EAX,  l[BP+12]
- [003C] 50 08 07             | MOV         SP,        BP
- [003F] 4C 08                | POP         BP
- [0041] 0E                   | RET  
->[0042] 90 00 00 0D          | MOV        EDX,         0
- [0046] 80 00 04             | SYS          4
- [0049] 90 00 00 0B          | MOV        EBX,         0
- [004D] 90 00 0A 2A          | MOV         AL,        10
- [0051] 90 00 14 4A          | MOV         AH,        20
- [0055] 70 2A 00 00 3B       | MOV      b[DS],        AL
- [005A] 70 6A 00 02 5B       | MOV    w[DS+2],        AX
- [005F] 8B 00 19             | PUSH        25
- [0062] 8B 00 11             | PUSH        17
- [0065] 8D 00 00             | CALL         0
- [0068] 91 00 08 07          | ADD         SP,         8
- [006C] 70 0A 00 04 9B       | MOV    l[DS+4],       EAX
- [0071] 50 1B 0D             | MOV        EDX,        DS
- [0074] 91 00 04 0D          | ADD        EDX,         4
- [0078] 9E 00 04 0C          | LDH        ECX,         4
- [007C] 9D 00 01 0C          | LDL        ECX,         1
- [0080] 90 00 01 0A          | MOV        EAX,         1
- [0084] 80 00 02             | SYS          2
- [0087] 80 00 0F             | SYS         15
- [008A] 0E                   | RET  
+ [0012] 49 6E 67 72 65 73 .. | "Ingrese un texto corto: "
+ [002B] 4D 65 6D 6F 72 69 .. | "Memoria capturo: "
+>[003D] 50 1E 0D             | MOV        EDX,        KS
+ [0040] 91 00 00 0D          | ADD        EDX,         0
+ [0044] 80 00 04             | SYS          4
+ [0047] 50 1B 0D             | MOV        EDX,        DS
+ [004A] 90 00 0F 0C          | MOV        ECX,        15
+ [004E] 80 00 03             | SYS          3
+ [0051] 50 1E 0D             | MOV        EDX,        KS
+ [0054] 91 00 19 0D          | ADD        EDX,        25
+ [0058] 80 00 0F             | SYS         15
+ [005B] 80 00 04             | SYS          4
+ [005E] 50 1B 0D             | MOV        EDX,        DS
+ [0061] 80 00 04             | SYS          4
+ [0064] 80 00 0F             | SYS         15
+ [0067] 0E                   | RET  

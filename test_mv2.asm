@@ -13,6 +13,7 @@ sumar:      push    bp
 main:       mov     edx, ks
             add     edx, msg_hola
             sys     4 ;imprime "Hola MV2!"
+            sys 0xF
 
             ; Probamos sub-registros (AL/AH/AX) y tamanios de memoria (b/w)
             mov     ebx, 0

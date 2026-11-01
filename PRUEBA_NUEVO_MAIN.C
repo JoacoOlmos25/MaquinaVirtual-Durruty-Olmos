@@ -25,7 +25,7 @@ static void escribir_mem32_be(TipoMV *MV, uint32_t dir_fisica, uint32_t valor) {
     MV->memoria[dir_fisica + 3] = valor & 0xFF;
 }
 
-// Guarda el estado actual de la MV en un archivo de imagen .vmi (Big Endian)
+// Guarda el estado actual de la MV en un archivo de imagen .vmi
 int guardar_vmi(const char *nombre_arch, TipoMV *MV) {
     if (nombre_arch == NULL || nombre_arch[0] == '\0') return 0;
 

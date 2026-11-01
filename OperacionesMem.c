@@ -49,7 +49,8 @@ void lecturaDeMemoria(TipoMV *MV, int OP) {
     // LAR guarda la dirección lógica (segmento en los 2 bytes altos, offset en los 2 bajos)
     MV->registros[LAR] = (seg << 16) | ((uint16_t)offset_total & 0xFFFF);
     // MAR guarda la cantidad de bytes en el byte más alto y la dirección física en los 2 bajos
-    MV->registros[MAR] = (cant_bytes << 24) | dir_fisica;
+    MV->registros[MAR] = (cant_bytes << 16) | dir_fisica;
+    //FLAG
 }
 
 void CargaAMemoria(TipoMV *MV, int OP) {
@@ -68,7 +69,7 @@ void CargaAMemoria(TipoMV *MV, int OP) {
     }
 
     uint16_t dir_fisica = MV->registros[MAR] & 0xFFFF;
-    int leer = (MV->registros[MAR] >> 24) & 0xFF; 
+    int leer = (MV->registros[MAR] >> 16) & 0xFF; 
     uint32_t dato = (uint32_t)MV->registros[MBR]; 
 
     for (int i = 0; i < leer; i++) {
@@ -82,7 +83,7 @@ void TraigoDeMemoria(TipoMV *MV, int OP) {
     if (MV->registros[IP] == -1) return;
 
     uint16_t valor = MV->registros[MAR] & 0xFFFF;
-    int leer = (MV->registros[MAR] >> 24) & Masc_Byte_Menos_Sig;
+    int leer = (MV->registros[MAR] >> 16) & Masc_Byte_Menos_Sig;
     
     uint32_t dato = 0;
     for (int i = 0; i < leer; i++) {

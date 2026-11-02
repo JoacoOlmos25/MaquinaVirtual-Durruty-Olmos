@@ -115,13 +115,24 @@ void SUB(TipoMV *MV) {
     int32_t val_origen = obtenerDato(MV, OP2);
     if (MV->registros[IP] == -1) return;
 
-    if (val_origen > 0) {
-        val_origen = ~val_origen + 1;    
-    }
-    int64_t res_con_signo = (int64_t)val_destino + (int64_t)val_origen;
-    uint64_t res_sin_signo = ((uint64_t)val_destino & 0xFFFFFFFF) + ((uint64_t)val_origen & 0xFFFFFFFF);
+    // A - B en complemento a dos es siempre: A + (~B) + 1
+    int64_t res_con_signo = (int64_t)val_destino - (int64_t)val_origen;
+    uint64_t res_sin_signo = ((uint64_t)val_destino & 0xFFFFFFFFULL) +
+                             ((uint64_t)(~val_origen) & 0xFFFFFFFFULL) + 1ULL;
 
     guardarDato(MV, OP1, (int32_t)res_con_signo);
+    actualizaCC(MV, res_con_signo, res_sin_signo);
+}
+
+void CMP(TipoMV *MV) {
+    int32_t val_destino = obtenerDato(MV, OP1);
+    int32_t val_origen = obtenerDato(MV, OP2);
+    if (MV->registros[IP] == -1) return;
+
+    int64_t res_con_signo = (int64_t)val_destino - (int64_t)val_origen;
+    uint64_t res_sin_signo = ((uint64_t)val_destino & 0xFFFFFFFFULL) +
+                             ((uint64_t)(~val_origen) & 0xFFFFFFFFULL) + 1ULL;
+    
     actualizaCC(MV, res_con_signo, res_sin_signo);
 }
 
@@ -147,7 +158,7 @@ void DIV(TipoMV *MV) {
         MV->registros[IP] = -1; 
         return; 
     }
-
+    
     int64_t res_con_signo = (int64_t)val_destino / (int64_t)val_origen;
     uint64_t res_sin_signo = ((uint64_t)val_destino & 0xFFFFFFFF) / ((uint64_t)val_origen & 0xFFFFFFFF);
     
@@ -156,19 +167,6 @@ void DIV(TipoMV *MV) {
     actualizaCC(MV, res_con_signo, res_sin_signo);
 }
 
-void CMP(TipoMV *MV) {
-    int32_t val_destino = obtenerDato(MV, OP1);
-    int32_t val_origen = obtenerDato(MV, OP2);
-    if (MV->registros[IP] == -1) return;
-
-    if (val_origen > 0) {
-        val_origen = ~val_origen + 1;
-    }
-    int64_t res_con_signo = (int64_t)val_destino + (int64_t)val_origen;
-    uint64_t res_sin_signo = ((uint64_t)val_destino & 0xFFFFFFFF) + ((uint64_t)val_origen & 0xFFFFFFFF);
-    
-    actualizaCC(MV, res_con_signo, res_sin_signo);
-}
 
 void AND(TipoMV *MV) {
     int32_t val_destino = obtenerDato(MV, OP1);

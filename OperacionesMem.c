@@ -57,17 +57,6 @@ void CargaAMemoria(TipoMV *MV, int OP) {
     lecturaDeMemoria(MV, OP);
     if (MV->registros[IP] == -1) return;
 
-    // Validar que no se intente escribir en el Const Segment (KS es de solo lectura)
-    if (MV->registros[KS] != -1) {
-        uint16_t seg_ks = (MV->registros[KS] >> 16) & 0xFFFF;
-        uint16_t seg_acceso = (MV->registros[LAR] >> 16) & 0xFFFF;
-        if (seg_acceso == seg_ks) {
-            MV->registros[IP] = -1;
-            printf("\n--- ERROR DE SEGMENTO: Intento de escritura en KS ---\n");
-            return;
-        }
-    }
-
     uint16_t dir_fisica = MV->registros[MAR] & 0xFFFF;
     int leer = (MV->registros[MAR] >> 16) & 0xFF; 
     uint32_t dato = (uint32_t)MV->registros[MBR]; 

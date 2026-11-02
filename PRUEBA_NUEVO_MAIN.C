@@ -422,23 +422,18 @@ int main(int argc, char *argv[]) {
         int cant_params = 0;
         char **lista_params = NULL;
 
-        // if (idx_p != -1) {
-        //     int params_extra = argc - (idx_p + 1);
-        //     cant_params = 1 + params_extra;
-        //     lista_params = (char **)malloc(cant_params * sizeof(char *));
-        //     lista_params[0] = arch_vmx;
-        //     for (int j = 0; j < params_extra; j++) {
-        //         lista_params[j + 1] = argv[idx_p + 1 + j];
-        //     }
-        // }correccion
-
         if (idx_p != -1 && (idx_p + 1) < argc) {
-         cant_params = argc - (idx_p + 1);
-         lista_params = &argv[idx_p + 1];
+            int params_extra = argc - (idx_p + 1);
+            cant_params = 1 + params_extra; // argv[0] = nombre .vmx + parametros
+            lista_params = (char **)malloc(cant_params * sizeof(char *));
+            lista_params[0] = arch_vmx;
+            for (int j = 0; j < params_extra; j++) {
+                lista_params[j + 1] = argv[idx_p + 1 + j];
+            }
         }
 
         inicializacion_vmx(arch_vmx, &MV, cant_params, lista_params);
-        // if (lista_params) free(lista_params);
+        if (lista_params) free(lista_params);
     } else {
         cargar_vmi(arch_vmi, &MV);
     }

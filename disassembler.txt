@@ -1,5 +1,39 @@
- [0012] 43 6F 6E 73 74 61 .. | "Constante protegida"
->[0026] 50 1E 0D             | MOV        EDX,        KS
- [0029] 91 00 00 0D          | ADD        EDX,         0
- [002D] B0 00 41 00 00 2D    | MOV     b[EDX],        65
- [0033] 0E                   | RET  
+ [0000] 4C 41 20 52 55 54 .. | "LA RUTA NATURAL"
+ [0010] 41 4E 49 54 41 20 .. | "ANITA LAVA LA TINA"
+ [0023] 0A 00                | "."
+ [0025] B0 00 00 00 00 2D    | MOV     b[EDX],         0
+ [002B] 50 1B 0D             | MOV        EDX,        DS
+ [002E] 80 00 04             | SYS          4
+ [0031] 50 1E 0D             | MOV        EDX,        KS
+ [0034] 91 00 23 0D          | ADD        EDX,        35
+ [0038] 80 00 04             | SYS          4
+ [003B] 0F                   | STOP 
+ [003C] B5 00 00 00 00 2B    | CMP     b[EBX],         0
+ [0042] 84 00 00             | JZ           0
+ [0045] B5 00 20 00 00 2B    | CMP     b[EBX],        32
+ [004B] 89 00 31             | JNZ         49
+ [004E] D0 00 00 2B 10       | MOV         AC,    b[EBX]
+ [0053] 81 00 43             | JMP         67
+ [0056] 92 00 01 0A          | SUB        EAX,         1
+ [005A] B5 00 20 00 00 2A    | CMP     b[EAX],        32
+ [0060] 84 00 17             | JZ          23
+ [0063] D0 00 00 2A 10       | MOV         AC,    b[EAX]
+ [0068] 97 00 20 10          | OR          AC,        32
+ [006C] 70 10 00 00 2C       | MOV     b[ECX],        AC
+ [0071] 91 00 01 0B          | ADD        EBX,         1
+ [0075] 91 00 01 0C          | ADD        ECX,         1
+ [0079] 81 00 17             | JMP         23
+ [007C] 50 1E 0D             | MOV        EDX,        KS
+ [007F] 91 00 10 0D          | ADD        EDX,        16
+ [0083] 50 0D 0A             | MOV        EAX,       EDX
+ [0086] 50 0D 0B             | MOV        EBX,       EDX
+ [0089] 50 1B 0C             | MOV        ECX,        DS
+ [008C] 80 00 0F             | SYS         15
+>[008F] 80 00 04             | SYS          4
+ [0092] 50 1E 0D             | MOV        EDX,        KS
+ [0095] 91 00 23 0D          | ADD        EDX,        35
+ [0099] 80 00 04             | SYS          4
+ [009C] B5 00 00 00 00 2A    | CMP     b[EAX],         0
+ [00A2] 84 00 17             | JZ          23
+ [00A5] 91 00 01 0A          | ADD        EAX,         1
+ [00A9] 81 00 77             | JMP        119

@@ -33,7 +33,13 @@ void JNP(TipoMV *MV);
 void JNN(TipoMV *MV);
 void JNZ(TipoMV *MV);
 void NOT(TipoMV *MV);
+void PUSH(TipoMV *MV);
+void POP(TipoMV *MV);
+void CALL(TipoMV *MV);
 
 //Operaciones sin registros
-
+void RET(TipoMV *MV);
 void STOP(TipoMV *MV);
+
+// Auxiliar para el modo paso a paso (SYS F)
+void ejecutar_breakpoint(TipoMV *MV);

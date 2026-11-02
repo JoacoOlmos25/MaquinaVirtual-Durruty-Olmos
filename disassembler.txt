@@ -1,39 +1,121 @@
- [0000] 4C 41 20 52 55 54 .. | "LA RUTA NATURAL"
- [0010] 41 4E 49 54 41 20 .. | "ANITA LAVA LA TINA"
- [0023] 0A 00                | "."
- [0025] B0 00 00 00 00 2D    | MOV     b[EDX],         0
- [002B] 50 1B 0D             | MOV        EDX,        DS
- [002E] 80 00 04             | SYS          4
- [0031] 50 1E 0D             | MOV        EDX,        KS
- [0034] 91 00 23 0D          | ADD        EDX,        35
- [0038] 80 00 04             | SYS          4
- [003B] 0F                   | STOP 
- [003C] B5 00 00 00 00 2B    | CMP     b[EBX],         0
- [0042] 84 00 00             | JZ           0
- [0045] B5 00 20 00 00 2B    | CMP     b[EBX],        32
- [004B] 89 00 31             | JNZ         49
- [004E] D0 00 00 2B 10       | MOV         AC,    b[EBX]
- [0053] 81 00 43             | JMP         67
- [0056] 92 00 01 0A          | SUB        EAX,         1
- [005A] B5 00 20 00 00 2A    | CMP     b[EAX],        32
- [0060] 84 00 17             | JZ          23
- [0063] D0 00 00 2A 10       | MOV         AC,    b[EAX]
- [0068] 97 00 20 10          | OR          AC,        32
- [006C] 70 10 00 00 2C       | MOV     b[ECX],        AC
- [0071] 91 00 01 0B          | ADD        EBX,         1
- [0075] 91 00 01 0C          | ADD        ECX,         1
- [0079] 81 00 17             | JMP         23
- [007C] 50 1E 0D             | MOV        EDX,        KS
- [007F] 91 00 10 0D          | ADD        EDX,        16
- [0083] 50 0D 0A             | MOV        EAX,       EDX
- [0086] 50 0D 0B             | MOV        EBX,       EDX
- [0089] 50 1B 0C             | MOV        ECX,        DS
- [008C] 80 00 0F             | SYS         15
->[008F] 80 00 04             | SYS          4
- [0092] 50 1E 0D             | MOV        EDX,        KS
- [0095] 91 00 23 0D          | ADD        EDX,        35
- [0099] 80 00 04             | SYS          4
- [009C] B5 00 00 00 00 2A    | CMP     b[EAX],         0
- [00A2] 84 00 17             | JZ          23
- [00A5] 91 00 01 0A          | ADD        EAX,         1
- [00A9] 81 00 77             | JMP        119
+ [0068] 20 00                | " "
+ [006A] 0A 00                | "."
+ [006C] 4B 08                | PUSH        BP
+ [006E] 50 07 08             | MOV         BP,        SP
+ [0071] 4B 0B                | PUSH       EBX
+ [0073] D0 00 08 88 0A       | MOV        EAX,   l[BP+8]
+ [0078] D0 00 0C 88 0B       | MOV        EBX,  l[BP+12]
+ [007D] B5 00 00 00 00 2A    | CMP     b[EAX],         0
+ [0083] 84 00 38             | JZ          56
+ [0086] B5 00 00 00 00 2B    | CMP     b[EBX],         0
+ [008C] 84 00 38             | JZ          56
+ [008F] F5 00 00 2B 00 00 2A | CMP     b[EAX],    b[EBX]
+ [0096] 89 00 38             | JNZ         56
+ [0099] 91 00 01 0A          | ADD        EAX,         1
+ [009D] 91 00 01 0B          | ADD        EBX,         1
+ [00A1] 81 00 11             | JMP         17
+ [00A4] D0 00 00 2A 0A       | MOV        EAX,    b[EAX]
+ [00A9] D2 00 00 2B 0A       | SUB        EAX,    b[EBX]
+ [00AE] 4C 0B                | POP        EBX
+ [00B0] 50 08 07             | MOV         SP,        BP
+ [00B3] 4C 08                | POP         BP
+ [00B5] 0E                   | RET  
+ [00B6] 4B 08                | PUSH        BP
+ [00B8] 50 07 08             | MOV         BP,        SP
+ [00BB] D0 00 00 9C 0A       | MOV        EAX,     l[ES]
+ [00C0] B1 00 0C 00 00 9C    | ADD      l[ES],        12
+ [00C6] F0 00 08 88 00 00 8A | MOV     l[EAX],   l[BP+8]
+ [00CD] B0 FF FF 00 04 8A    | MOV   l[EAX+4],        -1
+ [00D3] B0 FF FF 00 08 8A    | MOV   l[EAX+8],        -1
+ [00D9] 50 08 07             | MOV         SP,        BP
+ [00DC] 4C 08                | POP         BP
+ [00DE] 0E                   | RET  
+ [00DF] 4B 08                | PUSH        BP
+ [00E1] 50 07 08             | MOV         BP,        SP
+ [00E4] 4B 0A                | PUSH       EAX
+ [00E6] 4B 0B                | PUSH       EBX
+ [00E8] 4B 0C                | PUSH       ECX
+ [00EA] 4B 0D                | PUSH       EDX
+ [00EC] D0 00 08 88 0D       | MOV        EDX,   l[BP+8]
+ [00F1] D0 00 00 8D 0B       | MOV        EBX,    l[EDX]
+ [00F6] D0 00 0C 88 0C       | MOV        ECX,  l[BP+12]
+ [00FB] 95 FF FF 0B          | CMP        EBX,        -1
+ [00FF] 84 00 D3             | JZ         211
+ [0102] CB 00 00 8C          | PUSH    l[ECX]
+ [0106] CB 00 00 8B          | PUSH    l[EBX]
+ [010A] 8D 00 00             | CALL         0
+ [010D] 91 00 08 07          | ADD         SP,         8
+ [0111] 95 00 00 0A          | CMP        EAX,         0
+ [0115] 84 00 D8             | JZ         216
+ [0118] 83 00 C1             | JN         193
+ [011B] 91 00 04 0B          | ADD        EBX,         4
+ [011F] 4B 0C                | PUSH       ECX
+ [0121] 4B 0B                | PUSH       EBX
+ [0123] 8D 00 73             | CALL       115
+ [0126] 91 00 08 07          | ADD         SP,         8
+ [012A] 81 00 D8             | JMP        216
+ [012D] 91 00 08 0B          | ADD        EBX,         8
+ [0131] 4B 0C                | PUSH       ECX
+ [0133] 4B 0B                | PUSH       EBX
+ [0135] 8D 00 73             | CALL       115
+ [0138] 91 00 08 07          | ADD         SP,         8
+ [013C] 81 00 D8             | JMP        216
+ [013F] 70 0C 00 00 8D       | MOV     l[EDX],       ECX
+ [0144] 4C 0D                | POP        EDX
+ [0146] 4C 0C                | POP        ECX
+ [0148] 4C 0B                | POP        EBX
+ [014A] 4C 0A                | POP        EAX
+ [014C] 50 08 07             | MOV         SP,        BP
+ [014F] 4C 08                | POP         BP
+ [0151] 0E                   | RET  
+ [0152] 4B 08                | PUSH        BP
+ [0154] 50 07 08             | MOV         BP,        SP
+ [0157] 4B 0B                | PUSH       EBX
+ [0159] 4B 0D                | PUSH       EDX
+ [015B] D0 00 08 88 0B       | MOV        EBX,   l[BP+8]
+ [0160] 95 FF FF 0B          | CMP        EBX,        -1
+ [0164] 84 01 23             | JZ         291
+ [0167] CB 00 04 8B          | PUSH  l[EBX+4]
+ [016B] 8D 00 E6             | CALL       230
+ [016E] 91 00 04 07          | ADD         SP,         4
+ [0172] D0 00 00 8B 0D       | MOV        EDX,    l[EBX]
+ [0177] 80 00 04             | SYS          4
+ [017A] 50 1E 0D             | MOV        EDX,        KS
+ [017D] 91 00 02 0D          | ADD        EDX,         2
+ [0181] 80 00 04             | SYS          4
+ [0184] CB 00 08 8B          | PUSH  l[EBX+8]
+ [0188] 8D 00 E6             | CALL       230
+ [018B] 91 00 04 07          | ADD         SP,         4
+ [018F] 4C 0D                | POP        EDX
+ [0191] 4C 0B                | POP        EBX
+ [0193] 50 08 07             | MOV         SP,        BP
+ [0196] 4C 08                | POP         BP
+ [0198] 0E                   | RET  
+>[0199] 4B 08                | PUSH        BP
+ [019B] 50 07 08             | MOV         BP,        SP
+ [019E] 92 00 04 07          | SUB         SP,         4
+ [01A2] 70 1C 00 00 9C       | MOV      l[ES],        ES
+ [01A7] B1 00 04 00 00 9C    | ADD      l[ES],         4
+ [01AD] 50 08 0D             | MOV        EDX,        BP
+ [01B0] 92 00 04 0D          | SUB        EDX,         4
+ [01B4] B0 FF FF 00 00 8D    | MOV     l[EDX],        -1
+ [01BA] D0 00 08 88 0C       | MOV        ECX,   l[BP+8]
+ [01BF] D0 00 0C 88 0B       | MOV        EBX,  l[BP+12]
+ [01C4] 95 00 01 0C          | CMP        ECX,         1
+ [01C8] 87 01 80             | JNP        384
+ [01CB] 92 00 01 0C          | SUB        ECX,         1
+ [01CF] 91 00 04 0B          | ADD        EBX,         4
+ [01D3] CB 00 00 8B          | PUSH    l[EBX]
+ [01D7] 8D 00 4A             | CALL        74
+ [01DA] 91 00 04 07          | ADD         SP,         4
+ [01DE] 4B 0A                | PUSH       EAX
+ [01E0] 4B 0D                | PUSH       EDX
+ [01E2] 8D 00 73             | CALL       115
+ [01E5] 91 00 08 07          | ADD         SP,         8
+ [01E9] 81 01 58             | JMP        344
+ [01EC] CB 00 00 8D          | PUSH    l[EDX]
+ [01F0] 8D 00 E6             | CALL       230
+ [01F3] 91 00 04 07          | ADD         SP,         4
+ [01F7] 50 08 07             | MOV         SP,        BP
+ [01FA] 4C 08                | POP         BP
+ [01FC] 0E                   | RET  

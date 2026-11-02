@@ -115,7 +115,6 @@ void SUB(TipoMV *MV) {
     int32_t val_origen = obtenerDato(MV, OP2);
     if (MV->registros[IP] == -1) return;
 
-    // A - B en complemento a dos es siempre: A + (~B) + 1
     int64_t res_con_signo = (int64_t)val_destino - (int64_t)val_origen;
     uint64_t res_sin_signo = ((uint64_t)val_destino & 0xFFFFFFFFULL) +
                              ((uint64_t)(~val_origen) & 0xFFFFFFFFULL) + 1ULL;
